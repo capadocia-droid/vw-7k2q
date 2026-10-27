@@ -1,6 +1,6 @@
 /* Offline support: app shell cached on install; fonts and map tiles cached as you browse. */
-const SHELL = 'vawine-shell-v2';
-const RUNTIME = 'vawine-runtime-v2';
+const SHELL = 'vawine-shell-v6';
+const RUNTIME = 'vawine-runtime-v6';
 const FILES = ['./', './index.html', './app.js', './data.js', './leaflet.js', './leaflet.css', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -21,7 +21,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(SHELL).then(c => c.put(req, copy)); return r; }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
     return;
   }
-  if (/basemaps\.cartocdn\.com|fonts\.(googleapis|gstatic)\.com/.test(url.host)) {
+  if (/tile\.openstreetmap\.org|fonts\.(googleapis|gstatic)\.com/.test(url.host)) {
     e.respondWith(caches.open(RUNTIME).then(async c => {
       const hit = await c.match(req); if (hit) return hit;
       try { const r = await fetch(req); if (r.ok || r.type === 'opaque') { c.put(req, r.clone()); trimRuntime(); } return r; } catch (err) { return hit || Response.error(); }

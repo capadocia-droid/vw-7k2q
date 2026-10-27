@@ -10,8 +10,9 @@ window.GUIDE = {
     shen:   { name: "Shenandoah Gateway & Fauquier", short: "Shenandoah" },
     loud:   { name: "Loudoun Valley", short: "Loudoun" },
     hunt:   { name: "Middleburg & Hunt Country", short: "Hunt Country" },
-    r231:   { name: "Madison & Route 231", short: "Route 231" },
-    cville: { name: "Charlottesville & Monticello", short: "Monticello" }
+    r231:   { name: "Madison, Culpeper & Route 231", short: "Route 231" },
+    cville: { name: "Charlottesville & Monticello", short: "Monticello" },
+    md:     { name: "Maryland — Sugarloaf Mountain", short: "Maryland" }
   },
   picks: {
     next5:   { title: "Proposed next five visits", ids: ["glen-manor","capstone","early-mountain","pippin-hill","merrie-mill"],
@@ -20,6 +21,7 @@ window.GUIDE = {
     food:    { title: "Food is part of the experience", ids: ["three-fox","pippin-hill","early-mountain","barboursville","chrysalis","cana","merrie-mill","stone-tower","blue-quartz"] },
     gems:    { title: "Hidden gems", ids: ["glen-manor","capstone","granite-heights","revalation","septenary","walsh"] },
     bravo:   { title: "Best with Bravo", ids: ["ducard","three-fox","chester-gap","king-family","glen-manor","blue-quartz","afton-mountain","breaux","walsh"] },
+    glist:   { title: "On our Google Maps list", ids: ["rappahannock-cellars","chester-gap","linden","quievremont","crimson-lane","capstone","three-fox","lost-mountain","mountain-run","revalation","greenhill","bluemont","early-mountain","barboursville","southwest-mountains","sugarloaf","king-family","pollak","pippin-hill","veritas","afton-mountain"] },
     plan:    { title: "Needs extra planning", ids: ["crimson-lane","lost-mountain","linden","granite-heights"] }
   },
   wineries: [
@@ -42,21 +44,40 @@ window.GUIDE = {
     hoursText:"Mon–Thu noon–5 PM · Fri noon–9 PM (May–Oct) or noon–6 PM (Nov–Apr) · Sat–Sun noon–6 PM · Selected second Saturdays until 9 PM",
     h:"Mo-Th 12:00-17:00|Fr 12:00-21:00|Sa,Su 12:00-18:00",
     seasons:[{ m:[11,12,1,2,3,4], h:"Mo-Th 12:00-17:00|Fr 12:00-18:00|Sa,Su 12:00-18:00" }],
-    flights:["Four half-glasses — red, white, or mixed — with tableside service and commentary"],
+    flights:["White, red, or mixed flight — $32 (four half-glasses, tableside, with commentary)","Celebration flight (sparkling and dessert) — $42","By the glass — $14; premium pours $18 (Gold Medal, XOXO, Dorothy's Slippers, C'est Trop)","Wine club discounts apply"],
     food:"Local cheeses, charcuterie, chocolates, peanuts, and other light snacks. Outside picnics permitted.", foodLevel:"snacks", picnic:true,
     wines:["Cabernet Franc","Cabernet Franc Reserve","Triskele","Rotating premium or library selections"],
     features:["Edge of Shenandoah National Park","Outdoor seating","Peaceful atmosphere","Live music on selected dates","Knowledgeable hospitality"],
     dogs:"Welcome on leash.", dog:"yes",
     res:"Walk-ins welcome for fewer than ten; Saturday reservations recommended.", resLevel:"walkin",
     why:"Exactly the kind of lesser-known, wine-focused estate that our guide should champion.",
-    url:"https://ducardvineyards.com/visit-us/", urlLabel:"Visits, flights, food, and hours" },
+    url:"https://ducardvineyards.com/visit-us/", urlLabel:"Visits, flights, food, and hours",
+    menu:{ source:"Flight menu, photographed on our visit",
+      wine:[
+        { sec:"White wine flight · $32", items:[
+          { n:"2025 Rosé", d:"Peach, green tea, simply delightful · in the mixed flight" },
+          { n:"2024 Veni, Vidi, Vino", d:"Bright, fresh, pairs well with shellfish · in the mixed flight" },
+          { n:"2025 Gibson Hollow White", d:"Stone fruit, summer sipper, refreshing" },
+          { n:"2025 Shenandoah", d:"Off-dry, melon, floral · part of proceeds to the Shenandoah National Park Trust" } ]},
+        { sec:"Red wine flight · $32", items:[
+          { n:"2022 Merlot", d:"Black cherry, inviting, lively · in the mixed flight" },
+          { n:"2024 Popham Run Red", d:"Versatile, red fruit galore, harmonious" },
+          { n:"2023 Petit Verdot", d:"Dried flowers, plum, refined tannins · in the mixed flight" },
+          { n:"2022 Norton", d:"Violet, dried fruit, spice" } ]},
+        { sec:"Celebration wine flight · $42", items:[
+          { n:"2024 Pet gNat", d:"Funky, fresh, and fizzy" },
+          { n:"2022 XOXO", d:"Refined, brioche, brut · premium pour" },
+          { n:"2024 enCore", d:"Dry, refreshing, and lightly fizzy" },
+          { n:"2022 C'est Trop", d:"Ripe plum, chocolate, subtle tannins · premium pour" } ]}
+      ],
+      note:"Mixed flight ($32) = the four wines marked “in the mixed flight”. By the glass $14, premium $18. Wine club discounts apply." } },
 
   { id:"chester-gap", n:"Chester Gap Cellars", town:"Front Royal", region:"shen", lat:38.8590, lng:-78.1390, visited:true, tier:"Founding favorite",
     status:"Personally visited — loved, especially for its spectacular views.",
     hoursText:"Thu–Sun 11 AM–6 PM (Thursday seasonal) · Last call 5:30 PM",
     h:"Th-Su 11:00-18:00",
     flights:["Tastings available — current flights and prices need confirmation"],
-    food:"Meats, cheeses, crackers, and locally made stuffed breads. Outside picnics permitted.", foodLevel:"snacks", picnic:true,
+    food:"Flatbreads, including an olive flatbread, plus meats, cheeses, crackers, and locally made stuffed breads. Outside picnics permitted.", foodLevel:"snacks", picnic:true,
     wines:["Viognier","Roussanne","Cabernet Franc","Petit Verdot"],
     features:["Small hillside winery","Panoramic valley and mountain views","Unpretentious tasting atmosphere"],
     dogs:"Welcome on leash.", dog:"yes",
@@ -88,7 +109,49 @@ window.GUIDE = {
     dogs:"Not permitted.", dog:"no", adults:true,
     res:"Required per the visiting page; occasional walk-ins. Adults 21+ only.", resLevel:"required",
     why:"One of the strongest candidates for a sophisticated romantic wine experience, especially the East Porch overlooking the vines.",
-    url:"https://crimsonlanevineyards.com/visit/", urlLabel:"Experiences and booking" },
+    url:"https://crimsonlanevineyards.com/visit/", urlLabel:"Experiences and booking",
+    menu:{ asOf:"2026-10-27", source:"Printed menu, photographed on our visit",
+      food:[
+        { sec:"Delectable accompaniments", items:[
+          { n:"Seasonal Cheeseboard", p:"$37", d:"Four cheeses with Marcona almonds, honey, dried fruit, jam, and bread. Currently: Shadow Blossom (herbaceous, creamy cow's milk; Hofkäserei Kraus, Germany), L'Amuse Gouda (buttery, crunchy, rich; Amsterdam), Miticana de Cabra (soft, mushroomy goat's milk; Murcia, Spain), Prairie Breeze (crumbly, sweet cheddar; Milton Creamery, Iowa)." },
+          { n:"Charcuterie Platter", p:"$35", d:"Bresaola, duck prosciutto, lomo, and salami Toscano with cornichons, grainy mustard, olives, and crackers." },
+          { n:"Crimson Combination Board", p:"$43", d:"Shadow Blossom, Miticana de Cabra, and Prairie Breeze cheeses with bresaola, lomo, and Big Red Wagyu; bread, jam, mustard, and accoutrements." },
+          { n:"Crab Cakes", p:"$28", d:"Two crab cakes with remoulade." },
+          { n:"Tomato, Herb & Pesto Burrata", p:"$22", d:"Fresh, creamy burrata with savory pesto, sun-dried tomatoes, and balsamic glaze." },
+          { n:"Perfect Pita Hummus Platter", p:"$22", d:"Crumbled feta, Castelvetrano and black olives, and roasted tomatoes, with pita." } ]},
+        { sec:"Local offerings", items:[
+          { n:"Empanadas by Quattro Empanadas", p:"$22", d:"Three Argentine-style turnovers: corn & cheese, spicy beef, and chicken. Small family-run local business." },
+          { n:"Cake by Alegre Hills Bakers", p:"$12 / slice", d:"Honey lavender cheesecake or chocolate flourless torte, from a Linden baking duo." },
+          { n:"Sticky Toffee Cake", p:"$11", d:"Warm sponge cake soaked in toffee sauce, with chopped pecans." } ]}
+      ],
+      wine:[
+        { sec:"Estate grown · whites", items:[
+          { n:"2022 Chardonnay", d:"Higher Power Vineyard · balanced, ripe, crisp", g:"$17", b:"$48", estate:true },
+          { n:"2023 Sauvignon Blanc", d:"Higher Power Vineyard · youthful, refreshing, delectable", g:"$17", b:"$48", estate:true },
+          { n:"2022 Barrel Aged Chardonnay", d:"Higher Power Vineyard · golden, rich, harmonious", g:"$19", b:"$55", estate:true } ]},
+        { sec:"Estate grown · reds", items:[
+          { n:"2022 Collina", d:"Higher Power & Rocky Road Vineyards · round, elegant, fresh", g:"$25", b:"$86", estate:true },
+          { n:"2022 Parral", d:"Higher Power & Rocky Road Vineyards · layered, nuanced, refined", g:"$29", b:"$98", estate:true } ]},
+        { sec:"Curated · sparkling", items:[
+          { n:"Thibaut-Janisson Blanc de Blanc Brut NV", d:"Chardonnay · green apple, citrus, subtle toast", g:"$14", b:"$45" },
+          { n:"Henri Champliau Brut Rosé NV", d:"Pinot Noir Crémant · strawberry, citrus, fine bubbles", g:"$18", b:"$55" },
+          { n:"Aubert et Fils Champagne NV", d:"Chardonnay · apple, citrus, light brioche", b:"$60" },
+          { n:"Laurent-Perrier La Cuvée Brut NV", d:"Chardonnay · citrus, white fruit, persistent bubbles", g:"$38", b:"$96" } ]},
+        { sec:"Curated · whites", items:[
+          { n:"Soalheiro Alvarinho Granit 2024", d:"Portugal · citrus, stone fruit, crisp, mineral", b:"$49" },
+          { n:"Carl Graff Riesling Kabinett 2021", d:"Germany · green apple, citrus, subtle sweetness", b:"$45" },
+          { n:"Massolino Moscato d'Asti 2024", d:"Italy · lightly sparkling, peach, apricot, sweet finish", g:"$15", b:"$45" } ]},
+        { sec:"Curated · rosé", items:[
+          { n:"Château Clarettes Rosé 2025", d:"Cinsault & Mourvèdre, France · strawberry, grapefruit, crisp", b:"$35" },
+          { n:"Marrenon Merlot Rosé 2024", d:"France · red berry, clean dry finish", b:"$35" },
+          { n:"Baudry & Dutour \"Marie-Justine\" 2024", d:"Cabernet Franc rosé, France · peach and citrus", g:"$12", b:"$37" } ]},
+        { sec:"Curated · reds, light-bodied", items:[
+          { n:"Saint Cosme Côtes du Rhône 2024", d:"Syrah, France · blackberry, spice, smooth tannins", g:"$15", b:"$40" },
+          { n:"Quinta Nova Senhora do Carmo 2023", d:"Touriga Nacional, Portugal · dark berries, floral, silky", b:"$50" },
+          { n:"Lemelson \"Thea's Selection\" 2024", d:"Pinot Noir, Oregon · wild strawberry, roses", b:"$60" },
+          { n:"RAEN \"Royal St. Robert\" 2023", d:"Pinot Noir, Sonoma Coast · wild strawberry, roses, coastal", b:"$135" } ]}
+      ],
+      note:"Gluten-free and non-alcoholic options available — ask your tasting associate." } },
 
   { id:"bluemont", n:"Bluemont Vineyard", town:"Bluemont", region:"loud", lat:39.1085, lng:-77.8340, tier:"Northern Virginia premier",
     hoursText:"951 Tasting Room: Sun–Thu 11 AM–7 PM · Fri–Sat 11 AM–8 PM (some pages list later)",
@@ -124,7 +187,11 @@ window.GUIDE = {
     dogs:"Generally restricted to grass areas, not deck and patio seating; selected dog-friendly events differ.", dog:"limited",
     res:"Strongly encouraged Saturday and Sunday.", resLevel:"recommended",
     why:"Particularly appealing for a wine-focused afternoon with a mountain vista.",
-    url:"https://www.delaplanecellars.com/visit", urlLabel:"Hours, tastings, and seating" },
+    url:"https://www.delaplanecellars.com/visit", urlLabel:"Hours, tastings, and seating",
+    menu:{ source:"Flight card from our tasting, photographed on our visit",
+      wine:[ { sec:"Our four-wine flight", items:[
+        { n:"Aitheras", d:"Wine 1" }, { n:"Sauvignon Blanc", d:"Wine 2" }, { n:"Viognier", d:"Wine 3" }, { n:"Petit Manseng", d:"Wine 4" } ]} ],
+      note:"Four-wine self-guided tasting — $25 per the guide; selections rotate." } },
 
   { id:"stone-tower", n:"Stone Tower Winery", town:"Leesburg", region:"loud", lat:39.0815, lng:-77.6655, tier:"Tier 1",
     hoursText:"Thu–Mon 11 AM–6 PM · Tue–Wed closed",
@@ -479,6 +546,60 @@ window.GUIDE = {
     dogs:"Leashed dogs welcome.", dog:"yes", adults:true,
     res:"Six or more require reservations; no parties over ten; adults 21+.", resLevel:"walkin",
     why:"A promising intimate alternative to larger Charlottesville wineries, especially for a quiet romantic afternoon.",
-    url:"https://www.septenarywinery.com/visit-us/", urlLabel:"Hours, tastings, and policies" }
-  ]
+    url:"https://www.septenarywinery.com/visit-us/", urlLabel:"Hours, tastings, and policies" },
+  { id:"rappahannock-cellars", n:"Rappahannock Cellars", town:"Huntly", region:"shen", lat:38.8180, lng:-78.1080, tier:"From our Google list",
+    hoursText:"Daily noon–6 PM · last pour 5:30 PM · closed New Year's Day, Easter Sunday, Thanksgiving, and Christmas Day",
+    h:"Su-Sa 12:00-18:00", closed:["1-1","12-25"],
+    flights:["Tasting — about $15 per the Virginia Wine listing; confirm current flights"],
+    food:"Light fare menu: curated cheeses, hot baguette sandwiches, and spreads. You may bring a picnic to enjoy after your tasting.", foodLevel:"snacks", picnic:true,
+    wines:["Estate reds","Whites","Rosé","Sparkling","Dessert wines"],
+    features:["Vineyard views","Rooftop patio","Vineyard pavilion","Decks, porches, and lawn","Fire pits Oct–Apr (first come; bring a blanket)","Family-owned since 2001"],
+    dogs:"Leashed, well-behaved dogs (and cats) welcome in outdoor areas only; pet station by the parking lot, and staff bring a water bowl and a treat.", dog:"yes",
+    res:"No reservation needed for six or fewer; larger groups book through Tock.", resLevel:"walkin",
+    why:"About ten minutes from Flint Hill and open every day — the easiest spontaneous stop on the trip, with fire pits for a winter afternoon with Bravo.",
+    url:"https://www.rappahannockcellars.com/visit-us", urlLabel:"Visit information" },
+
+  { id:"quievremont", n:"Quièvremont Vineyard & Winery", town:"Washington", region:"shen", lat:38.7330, lng:-78.1980, tier:"From our Google list",
+    hoursText:"Thu–Sat & Mon 11 AM–5 PM · Sun 11:30 AM–5 PM · Tue–Wed closed · closed Thanksgiving, Christmas, New Year's Day, and Easter",
+    h:"Th,Fr,Sa,Mo 11:00-17:00|Su 11:30-17:00", closed:["1-1","12-25"],
+    flights:["Tasting — $18"],
+    experiences:["Vineyard and winery tour — $45 per person"],
+    food:"A small selection of light food for sale; you're welcome to bring your own.", foodLevel:"snacks", picnic:true,
+    wines:["Cabernet Franc","Merlot","Malbec","Petit Verdot","Chardonnay","Petit Manseng"],
+    features:["Small-batch, classic Bordeaux-style estate wines","Views over the estate pond to the Blue Ridge","Working farm (Reality Farm) with cattle, chickens, and goats","Vacation cottage beside the winery","Near the Inn at Little Washington"],
+    dogs:"Listed as pet-friendly; rules aren't published, so confirm before bringing Bravo inside.", dog:"yes",
+    res:"Not stated; call ahead for groups.", resLevel:"walkin",
+    why:"A quiet, wine-focused farm estate close to Flint Hill, in the spirit of the small producers we love.",
+    url:"https://quievremont.com", urlLabel:"Official site" },
+
+  { id:"mountain-run", n:"Mountain Run Winery", town:"Culpeper", region:"r231", lat:38.4530, lng:-78.0700, tier:"From our Google list",
+    hoursText:"Mar–Oct: Fri–Sun noon–7 PM · Nov–Feb: Sat–Sun noon–6 PM · curbside pickup daily",
+    h:"Fr-Su 12:00-19:00",
+    seasons:[{ m:[11,12,1,2], h:"Sa,Su 12:00-18:00" }],
+    flights:["Any four wines, ciders, or beers — $12","Large-group tastings (over eight), about 40 minutes, by reservation"],
+    food:"Crackers, cheeses, and meats for sale; picnics welcome; food trucks at many events. No outside alcohol.", foodLevel:"snacks", picnic:true,
+    wines:["Petit Verdot (Governor's Cup Gold, Governor's Case)","Chambourcin Reserve (Best in Show, 2022 Celebration of Chambourcin)","Cabernet Franc","Albariño","Nebbiolo","Ciders and meads"],
+    features:["Tasting room in a converted corn crib in an old barn","Heated loft in winter","130-year-old, 36-acre family farm","Open fields and vineyard views","Playground","Live music and festivals"],
+    dogs:"Leashed dogs welcome everywhere except the 21+ lounge.", dog:"yes",
+    res:"Reservations required for groups over eight.", resLevel:"walkin",
+    why:"Google's highest-rated winery on our list (4.9) — a relaxed, family-run farm with award-winning Petit Verdot and Chambourcin.",
+    url:"https://www.mountainrunwinery.com/visit-us/", urlLabel:"Hours and visitor information" },
+
+  { id:"sugarloaf", n:"Sugarloaf Mountain Vineyard", town:"Dickerson, MD", region:"md", lat:39.2509, lng:-77.3796, tier:"From our Google list",
+    hoursText:"Typically daily noon–5:30 PM · Tue & Fri until 7:30 PM (per listings; confirm seasonal hours on their site)",
+    h:"Su,Mo,We,Th,Sa 12:00-17:30|Tu,Fr 12:00-19:30",
+    flights:["Red and white flights — prices not published","Bacchus Club membership"],
+    food:"Bring your own food to the outdoor seating; food trucks on some days.", foodLevel:"trucks", picnic:true,
+    wines:["Chimera red blend","Chardonnay","Port-style wines","Rosé","Sangria"],
+    features:["Woman-owned","Red barn, silo, and windmill at the foot of Sugarloaf Mountain","Vineyard views","Live music","Friday happy hour","Popular with hikers and C&O Canal cyclists"],
+    dogs:"Listed as pet-friendly by Visit Maryland; rules not published — confirm.", dog:"unknown",
+    res:"Not stated; reviewers suggest arriving early — it gets busy later in the day.", resLevel:"walkin",
+    why:"Our one Maryland pick: a lively, brewery-style hangout with mountain views, best paired with a Sugarloaf hike.",
+    url:"https://www.smvwinery.com/", urlLabel:"Official site" }
+  ],
+  gRatings: { asOf:"2026-10-27", r:{
+    "afton-mountain":[4.3,298], "pippin-hill":[4.4,697], "veritas":[4.5,696], "king-family":[4.7,932], "pollak":[4.6,217],
+    "southwest-mountains":[4.4,156], "sugarloaf":[4.4,461], "early-mountain":[4.5,536], "barboursville":[4.6,760], "greenhill":[4.1,443],
+    "bluemont":[4.4,1310], "mountain-run":[4.9,274], "revalation":[4.7,82], "three-fox":[4.4,368], "lost-mountain":[4.6,109],
+    "crimson-lane":[4.5,325], "capstone":[4.8,139], "linden":[4.1,115], "quievremont":[4.7,158], "rappahannock-cellars":[4.7,473], "chester-gap":[4.8,219] } }
 };

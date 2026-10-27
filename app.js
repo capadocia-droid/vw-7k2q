@@ -98,7 +98,8 @@ async function loadAll() {
   keys.forEach((k, i) => (S.state[k] = vals[i]));
   [S.visits, S.photos, S.trips, S.custom] = await Promise.all([DB.all('visits'), DB.all('photos'), DB.all('trips'), DB.all('custom')]);
   for (const k of KV_KEYS) S.kv[k] = await DB.get('kv', k);
-  S.kv.settings = Object.assign({ base: G.defaultBase, myMaps: 'https://www.google.com/maps/d/edit?mid=1k3bSB_lTC7yy6nDtguaLcLDxvJUnBhg', theme: 'system' }, S.kv.settings || {});
+  S.kv.settings = Object.assign({ base: G.defaultBase, myMaps: 'https://maps.app.goo.gl/4qUU4Dng4q5XTpmm7', theme: 'system' }, S.kv.settings || {});
+  if (/1k3bSB_lTC7yy6nDtguaLcLDxvJUnBhg/.test(S.kv.settings.myMaps || '')) { S.kv.settings.myMaps = 'https://maps.app.goo.gl/4qUU4Dng4q5XTpmm7'; await saveKV('settings'); }
   S.kv.coords = S.kv.coords || {};
   S.kv.refine = S.kv.refine || {};
   if (!S.kv.seeded) await seed();
@@ -129,6 +130,7 @@ const ALL = () => G.wineries.concat(S.custom);
 const W = id => ALL().find(w => w.id === id);
 const pos = w => { const c = S.kv.coords[w.id]; return c && c[0] ? [c[0], c[1]] : [w.lat, w.lng]; };
 const regionColor = r => getComputedStyle(document.documentElement).getPropertyValue('--r-' + (r || 'shen')).trim() || '#3F5A7A';
+const gR = id => (G.gRatings && G.gRatings.r[id]) || null;
 const regionName = r => (G.regions[r] || {}).short || 'Virginia';
 const placeQ = w => `${w.n}, ${w.town}, VA`;
 const navURL = w => `https://www.google.com/maps/dir/?api=1&destination=${enc(placeQ(w))}&travelmode=driving`;
@@ -144,7 +146,7 @@ function score(id) {
   return Math.round((s.scenery * G.rubric.scenery + s.wine * G.rubric.wine + s.experience * G.rubric.experience) / 10);
 }
 const visitsOf = id => S.visits.filter(v => v.wid === id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-const photosOf = id => S.photos.filter(p => p.wid === id).sort((a, b) => (b.date || 0) - (a.date || 0));
+const photosOf = id => S.photos.filter(p => p.wid === id && p.kind !== 'menu').sort((a, b) => (b.date || 0) - (a.date || 0));
 const isVisited = id => st(id).status === 'visited' || S.visits.some(v => v.wid === id);
 const inPick = (key, id) => (G.picks[key] ? G.picks[key].ids.includes(id) : false);
 
@@ -166,7 +168,7 @@ function parseHours(str) {
 function schedule(w, d) { const mo = d.getMonth() + 1; let h = w.h; (w.seasons || []).forEach(s => { if (s.m.includes(mo)) h = s.h; }); return parseHours(h); }
 function fmtT(min) { let h = Math.floor(min / 60); const m = min % 60, ap = h >= 12 && h < 24 ? 'PM' : 'AM'; h = h % 12 || 12; return m ? `${h}:${String(m).padStart(2, '0')} ${ap}` : `${h} ${ap}`; }
 const fmtRange = r => r.map(([o, c]) => `${fmtT(o)}–${fmtT(c)}`).join(', ');
-function hoursOn(w, d) { const s = schedule(w, d); return s ? s[d.getDay()] : null; }
+function hoursOn(w, d) { const s = schedule(w, d); if (!s) return null; if ((w.closed || []).includes(`${d.getMonth() + 1}-${d.getDate()}`)) return []; return s[d.getDay()]; }
 function openStatus(w, now = new Date()) {
   if (!w.h) return { code: 'vary', label: w.irregular ? 'Limited days · check calendar' : 'Check calendar' };
   const t = now.getHours() * 60 + now.getMinutes(); const today = hoursOn(w, now);
@@ -240,12 +242,12 @@ async function decode(file) {
   try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (e) { /* fallback below */ }
   return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
 }
-async function addPhotos(files, wid, visitId) {
+async function addPhotos(files, wid, visitId, kind) {
   let n = 0;
   for (const f of files) {
     try {
       const img = await decode(f); const [full, thumb] = await Promise.all([canvasBlob(img, 1800, 0.84), canvasBlob(img, 440, 0.76)]);
-      const p = { id: uid('p'), wid, visitId: visitId || null, date: f.lastModified || Date.now(), caption: '', thumb };
+      const p = { id: uid('p'), wid, visitId: visitId || null, kind: kind || 'photo', date: f.lastModified || Date.now(), caption: kind === 'menu' ? 'Menu' : '', thumb };
       await DB.put('fulls', full, p.id); await DB.put('photos', p); S.photos.push(p); n++;
     } catch (e) { console.warn('photo failed', e); }
   }
@@ -253,11 +255,11 @@ async function addPhotos(files, wid, visitId) {
   return n;
 }
 let pickCtx = null;
-function pickPhotos(wid, visitId, camera, after) { pickCtx = { wid, visitId, after }; (camera ? $('#camPick') : $('#filePick')).click(); }
+function pickPhotos(wid, visitId, camera, after, kind) { pickCtx = { wid, visitId, after, kind }; (camera ? $('#camPick') : $('#filePick')).click(); }
 async function onPicked(e) {
   const files = [...e.target.files]; e.target.value = ''; if (!files.length || !pickCtx) return;
   toast(`Saving ${files.length} photo${files.length > 1 ? 's' : ''}…`);
-  const n = await addPhotos(files, pickCtx.wid, pickCtx.visitId);
+  const n = await addPhotos(files, pickCtx.wid, pickCtx.visitId, pickCtx.kind);
   toast(`${n} photo${n === 1 ? '' : 's'} saved`); const a = pickCtx.after; pickCtx = null; if (a) a(); else route();
 }
 async function openViewer(pid) {
@@ -331,7 +333,7 @@ function renderHome() {
     <div class="section"><div class="section-head"><h3>${esc(next.title)}</h3></div>
       <div class="hcards">${next.ids.map((id, i) => { const w = W(id); return `<a class="card pick" href="#w-${id}"><span class="rank">${String(i + 1).padStart(2, '0')} · ${esc(w.town)}</span><h4>${esc(w.n)}</h4><p>${esc(next.notes[id])}</p>${isVisited(id) ? '<span class="chip open">' + svg('check') + 'Visited</span>' : ''}</a>`; }).join('')}</div></div>
     <div class="section"><h3>Collections</h3><div class="collections">
-      ${['scenery', 'food', 'gems', 'bravo', 'plan'].map(k => `<a class="coll" href="#wineries" data-act="coll" data-k="${k}"><b>${esc(G.picks[k].title)}</b><span>${G.picks[k].ids.length} wineries</span></a>`).join('')}
+      ${['glist', 'scenery', 'food', 'gems', 'bravo', 'plan'].map(k => `<a class="coll" href="#wineries" data-act="coll" data-k="${k}"><b>${esc(G.picks[k].title)}</b><span>${G.picks[k].ids.length} wineries</span></a>`).join('')}
       <a class="coll" href="#wineries" data-act="filter" data-f="want"><b>Our want-to-go list</b><span>${all.filter(w => st(w.id).status === 'want').length} saved</span></a>
     </div></div>
     <div class="section"><div class="section-head"><h3>Latest from the journal</h3><a href="#journal">Journal</a></div>
@@ -353,7 +355,7 @@ const FILTERS = [
 ];
 function passes(w) {
   const s = st(w.id);
-  if (F.q) { const hay = [w.n, w.town, regionName(w.region), (w.wines || []).join(' '), (w.features || []).join(' '), s.notes || ''].join(' ').toLowerCase(); if (!F.q.toLowerCase().split(/\s+/).every(t => hay.includes(t))) return false; }
+  if (F.q) { const hay = [w.n, w.town, regionName(w.region), (w.wines || []).join(' '), (w.features || []).join(' '), s.notes || '', w.menu ? JSON.stringify(w.menu) : ''].join(' ').toLowerCase(); if (!F.q.toLowerCase().split(/\s+/).every(t => hay.includes(t))) return false; }
   if (F.region && w.region !== F.region) return false;
   if (F.coll && !inPick(F.coll, w.id)) return false;
   for (const f of F.on) {
@@ -382,7 +384,7 @@ function wCard(w) {
   const s = st(w.id); const sc = score(w.id); const ph = s.cover ? S.photos.find(p => p.id === s.cover) : photosOf(w.id)[0];
   const d = distFromBase(w);
   return `<a class="wcard" href="#w-${w.id}" style="--rc:${regionColor(w.region)}"><span class="band"></span>
-    <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(regionName(w.region))} · ${Math.round(d)} mi</span>
+    <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(regionName(w.region))} · ${Math.round(d)} mi${gR(w.id) ? ` · <span style="color:var(--gold)">★</span> ${gR(w.id)[0]}` : ''}</span>
       <span class="row">${statusChip(w)}</span>${wIcons(w)}</span>
     <span class="side">${ph ? `<img class="thumb" src="${thumbURL(ph)}" alt="">` : isVisited(w.id) ? `<span class="stamp-mini" title="Visited">${svg('check')}</span>` : s.status === 'want' ? `<span style="color:var(--claret)">${svg('heartf', 'width="20" height="20"')}</span>` : '<span></span>'}
       ${sc != null ? `<span class="score">${sc}</span>` : s.fav ? `<span style="color:var(--gold)">${svg('star', 'width="16" height="16"')}</span>` : ''}</span></a>`;
@@ -475,6 +477,7 @@ async function renderWinery(id) {
   </div>
   ${(w.flights || []).length || (w.experiences || []).length ? `<div class="section"><h3>Tastings & flights</h3><div class="card" style="padding:2px 14px"><ul class="plain">${(w.flights || []).map(f => `<li>${esc(f)}</li>`).join('')}${(w.experiences || []).map(f => `<li><span class="chip gold" style="margin-right:6px">Experience</span>${esc(f)}</li>`).join('')}</ul></div></div>` : ''}
   ${w.food ? `<div class="section"><div class="section-head"><h3>Food</h3>${w.menuUrl ? `<a href="${esc(w.menuUrl)}" target="_blank" rel="noopener">Current menu</a>` : ''}</div><p class="prose" style="margin:0">${esc(w.food)}</p></div>` : ''}
+  ${menuSection(w)}
   <div class="section"><div class="section-head"><h3>Wines to try</h3><span class="small muted">${wineNames.filter(n => (s.wines || {})[n]?.t).length}/${wineNames.length} tasted</span></div>
     <div class="card" style="padding:2px 14px">${wineNames.map(n => wineRow(id, n)).join('') || '<p class="muted small">No wines yet.</p>'}
       <div class="row" style="padding:10px 0;flex-wrap:nowrap"><input type="text" id="newWine" placeholder="Add a wine you tasted"><button class="btn" data-act="addWine" data-id="${id}">${svg('plus')}Add</button></div></div>
@@ -495,7 +498,7 @@ async function renderWinery(id) {
   <div class="section"><div class="section-head"><h3>Bottles we bought</h3><button class="linkbtn" data-act="addBottle" data-id="${id}">Add bottle</button></div>
     ${(s.bottles || []).length ? `<div class="card" style="padding:2px 14px"><ul class="plain">${s.bottles.map((b, i) => `<li class="row" style="justify-content:space-between;flex-wrap:nowrap"><span>${svg('bottle', 'width="16" height="16" style="vertical-align:-3px;color:var(--claret)"')} <b>${esc(b.wine)}</b>${b.vintage ? ' ' + esc(b.vintage) : ''} <span class="muted small">× ${esc(b.qty || 1)}${b.price ? ' · $' + esc(b.price) : ''}${b.date ? ' · ' + fmtDate(b.date) : ''}</span></span><button class="iconbtn" style="width:32px;height:32px" data-act="delBottle" data-id="${id}" data-i="${i}" aria-label="Remove">${svg('x')}</button></li>`).join('')}</ul></div>` : '<div class="empty">Track what came home with you, and when to open it.</div>'}</div>
   <div class="section"><h3>Public reviews</h3>
-    <div class="card"><div class="links">
+    <div class="card">${gR(id) ? `<div class="row" style="padding-bottom:6px"><b class="mono" style="font-size:22px">${gR(id)[0]}</b><span style="color:var(--gold)">★</span><span class="small muted">Google · ${gR(id)[1].toLocaleString()} reviews · as of ${fmtDate(G.gRatings.asOf)}</span></div>` : ''}<div class="links">
       <a href="https://www.google.com/maps/search/?api=1&query=${enc(placeQ(w))}" target="_blank" rel="noopener">Google reviews <span>${svg('ext')}</span></a>
       <a href="https://www.tripadvisor.com/Search?q=${enc(w.n + ' ' + w.town)}" target="_blank" rel="noopener">Tripadvisor <span>${svg('ext')}</span></a>
       <a href="https://www.yelp.com/search?find_desc=${enc(w.n)}&find_loc=${enc(w.town + ', VA')}" target="_blank" rel="noopener">Yelp <span>${svg('ext')}</span></a>
@@ -512,6 +515,19 @@ async function renderWinery(id) {
     ${w.custom ? `<button class="btn" data-act="delCustom" data-id="${id}">${svg('trash')}Remove this winery</button>` : ''}</div></div>`;
   paintRidges(view);
   loadWeather(w);
+}
+function menuSection(w) {
+  const m = w.menu; const mp = S.photos.filter(p => p.wid === w.id && p.kind === 'menu').sort((a, b) => b.date - a.date);
+  const ratings = st(w.id).wines || {};
+  const item = (x, wine) => `<div class="mi${wine ? ' tap' : ''}" ${wine ? `data-act="wineNote" data-id="${w.id}" data-n="${esc(x.n)}" role="button" tabindex="0"` : ''}><div class="mi-h"><b>${esc(x.n)}</b><span class="mono">${wine ? esc([x.g, x.b].filter(Boolean).join(' | ')) : esc(x.p)}</span></div>${x.d ? `<div class="small muted">${esc(x.d)}</div>` : ''}${wine && ratings[x.n] && ratings[x.n].s ? `<div class="small" style="color:var(--gold)">${'★'.repeat(ratings[x.n].s)}${ratings[x.n].note ? ` <span class="muted">· ${esc(ratings[x.n].note)}</span>` : ''}</div>` : ''}</div>`;
+  const block = (secs, wine) => secs.map(sc => `<div class="mi-sec">${esc(sc.sec)}</div>${sc.items.map(x => item(x, wine)).join('')}`).join('');
+  return `<div class="section"><div class="section-head"><h3>Menu</h3><button class="linkbtn" data-act="menuPhoto" data-id="${w.id}">Add menu photo</button></div>
+    ${m ? `<span class="small muted">${esc(m.source || 'Menu')}${m.asOf ? ' · ' + fmtDate(m.asOf) : ''}</span>
+      ${m.food ? `<details class="card menu" open><summary>Food${m.food.reduce((n, sc) => n + sc.items.length, 0) ? ` · ${m.food.reduce((n, sc) => n + sc.items.length, 0)} items` : ''}</summary>${block(m.food, false)}</details>` : ''}
+      ${m.wine ? `<details class="card menu"><summary>Wine list · ${m.wine.reduce((n, sc) => n + sc.items.length, 0)} wines <span class="small muted">· ${m.wine.some(sc => sc.items.some(x => x.g || x.b)) ? 'glass | bottle · ' : ''}tap to rate</span></summary>${block(m.wine, true)}</details>` : ''}
+      ${m.note ? `<span class="small muted">${esc(m.note)}</span>` : ''}` : ''}
+    ${mp.length ? `<div class="strip">${mp.map(p => `<img src="${thumbURL(p)}" alt="Menu photo" data-act="viewPhoto" data-pid="${p.id}">`).join('')}</div>` : m ? '' : '<div class="empty">No menu yet. Photograph the menu on your visit, then send the photos to Claude to have it typed into the guide.</div>'}
+  </div>`;
 }
 function wineRow(id, n) {
   const x = (st(id).wines || {})[n] || {};
@@ -583,7 +599,7 @@ function wineSheet(id, n) {
   if ($('#wDel', el)) $('#wDel', el).onclick = async () => { const s = st(id); const wines = Object.assign({}, s.wines); delete wines[n]; await setSt(id, { wines, extraWines: (s.extraWines || []).filter(z => z !== n) }); route(); };
   $('#wf', el).addEventListener('submit', async e => { e.preventDefault(); await saveWine(id, n, { s: stars, v: $('#wV', el).value.trim(), note: $('#wN', el).value.trim(), t: true }); route(); });
 }
-async function saveWine(id, n, patch) { const wines = Object.assign({}, st(id).wines); wines[n] = Object.assign({}, wines[n], patch); await setSt(id, { wines }); }
+async function saveWine(id, n, patch) { const s = st(id); const wines = Object.assign({}, s.wines); wines[n] = Object.assign({}, wines[n], patch); const extra = s.extraWines || []; const listed = (W(id).wines || []).concat(extra).includes(n); await setSt(id, listed ? { wines } : { wines, extraWines: extra.concat(n) }); }
 function bottleSheet(id) {
   const el = openSheet(`<h2>Add a bottle</h2><form class="stack" id="bf">
     <label class="fld">Wine<input type="text" id="bW" list="bwl" required placeholder="Cabernet Franc Reserve"><datalist id="bwl">${(W(id).wines || []).concat(st(id).extraWines || []).map(n => `<option value="${esc(n)}">`).join('')}</datalist></label>
@@ -610,21 +626,28 @@ function pinColor(w) { const s = st(w.id); if (isVisited(w.id)) return 'var(--vi
 function renderMap() {
   setTop('Map');
   view.innerHTML = `<div class="mapwrap" id="mw">
-    ${MF.mode === 'guide' ? '<div id="leaf"></div>' : `<iframe src="${myMapsEmbed()}" title="Our Google My Maps list" allowfullscreen></iframe><div class="gmnote">Your Google My Maps list. If it shows an empty map, open the map in My Maps, set sharing to <b>Anyone with the link can view</b>, and paste its link in <a href="#prefs">Settings</a>.</div>`}
+    ${MF.mode === 'guide' ? '<div id="leaf"></div>' : googleTab()}
     <div class="mapctl">
-      <div class="seg"><button class="${MF.mode === 'guide' ? 'on' : ''}" data-act="mapMode" data-m="guide">Guide map</button><button class="${MF.mode === 'google' ? 'on' : ''}" data-act="mapMode" data-m="google">Google My Maps</button></div>
+      <div class="seg"><button class="${MF.mode === 'guide' ? 'on' : ''}" data-act="mapMode" data-m="guide">Guide map</button><button class="${MF.mode === 'google' ? 'on' : ''}" data-act="mapMode" data-m="google">Google Maps</button></div>
       ${MF.mode === 'guide' ? `<div class="scroller">${[['want', 'Want to go', 'heart'], ['visited', 'Visited', 'check'], ['unvisited', 'Not visited', 'mountain'], ['dog', 'Bravo welcome', 'dog'], ['open', 'Open now', 'clock']].map(([k, l, i]) => `<button class="fchip ${MF.on.has(k) ? 'on' : ''}" data-act="mapF" data-f="${k}">${svg(i)}${l}</button>`).join('')}</div>` : ''}
     </div>
     ${MF.mode === 'guide' ? `<button class="locbtn" data-act="locate" aria-label="Show my location">${svg('locate')}</button><div class="peek" id="peek" hidden></div>` : ''}
   </div>`;
   if (MF.mode === 'guide') initLeaflet();
 }
-function myMapsEmbed() { const m = (S.kv.settings.myMaps || '').match(/mid=([\w-]+)/); return m ? `https://www.google.com/maps/d/embed?mid=${m[1]}` : 'about:blank'; }
+function googleTab() {
+  const link = (S.kv.settings.myMaps || '').trim(); const mid = link.match(/mid=([\w-]+)/); const b = base();
+  if (!navigator.onLine) return '<div class="mapholder" style="position:absolute;inset:0;aspect-ratio:auto;border-radius:0">Google Maps needs a connection. The Guide map works offline.</div>';
+  const src = mid ? `https://www.google.com/maps/d/embed?mid=${mid[1]}` : `https://maps.google.com/maps?q=${enc('wineries near ' + b.name)}&ll=${b.lat},${b.lng}&z=9&output=embed`;
+  const listBtn = link && !mid ? `<a class="btn primary" href="${esc(link)}" target="_blank" rel="noopener">${svg('ext')}Open our list in Google Maps</a>` : '';
+  return `<iframe src="${src}" title="Google Maps" allowfullscreen loading="lazy"></iframe><div class="gmnote stack" style="gap:8px">${mid ? 'Our Google My Maps map.' : `Google's live map of wineries around ${esc(b.name.split(',')[0])}. Our saved list opens in the Google Maps app, where you see its pins, ratings and photos.`}${listBtn ? `<div>${listBtn}</div>` : '<div class="small muted">Add your saved-list link in <a href="#prefs">Settings</a>.</div>'}</div>`;
+}
 function initLeaflet() {
   if (typeof L === 'undefined') { $('#leaf').innerHTML = '<div class="mapholder" style="height:100%">Map library failed to load.</div>'; return; }
   const dark = document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
   mapInst = L.map('leaf', { zoomControl: false, attributionControl: true });
-  L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'rastertiles/voyager'}/{z}/{x}/{y}{r}.png`, { maxZoom: 18, subdomains: 'abcd', attribution: '© OpenStreetMap contributors © CARTO' }).addTo(mapInst);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(mapInst);
+  $('#leaf').classList.toggle('darktiles', dark);
   const b = base();
   L.marker([b.lat, b.lng], { icon: L.divIcon({ className: '', html: `<div class="pin base"><i>${svg('mountain', 'width="14" height="14" style="color:#fff"')}</i></div>`, iconSize: [26, 26], iconAnchor: [13, 13] }), title: b.name, zIndexOffset: -100 }).addTo(mapInst).bindTooltip(`Base: ${b.name}`);
   const shown = ALL().filter(w => [...MF.on].every(f => (f === 'want' ? st(w.id).status === 'want' : f === 'visited' ? isVisited(w.id) : f === 'unvisited' ? !isVisited(w.id) : f === 'dog' ? w.dog === 'yes' : f === 'open' ? openStatus(w).code === 'open' : true)));
@@ -759,9 +782,9 @@ async function renderPrefs() {
     <span>Distances and “near me” use <b>${esc(base().name)}</b>.</span>
     <div class="row"><button class="btn" data-act="baseFlint">Flint Hill, VA</button><button class="btn" data-act="baseGPS">${svg('locate')}Use my location</button></div>
     <label class="fld">Or a winery as base<select id="baseW"><option value="">Choose…</option>${ALL().map(w => `<option value="${w.id}">${esc(w.n)}</option>`).join('')}</select></label></div></div>
-  <div class="section"><h3>Google My Maps list</h3><div class="card stack">
-    <label class="fld">Map link<input type="url" id="mm" value="${esc(s.myMaps || '')}" placeholder="https://www.google.com/maps/d/…mid=…"></label>
-    <span class="small muted">Shown in the Map tab under “Google My Maps”. The map must be shared as “Anyone with the link can view”.</span>
+  <div class="section"><h3>Our Google Maps list</h3><div class="card stack">
+    <label class="fld">Map link<input type="url" id="mm" value="${esc(s.myMaps || '')}" placeholder="https://maps.app.goo.gl/…" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <span class="small muted">In Google Maps, open the saved list, tap Share, copy the link and paste it here. The Map tab's Google view gets a button that opens it. A My Maps link (one containing mid=) is embedded in the tab instead.</span>
     <div><button class="btn" data-act="saveMM">Save link</button></div></div></div>
   <div class="section"><h3>Map pins</h3><div class="card stack">
     <span class="small">${refined} pins refined from OpenStreetMap, ${gps} pinned by GPS, the rest are guide estimates.</span>
@@ -851,6 +874,7 @@ const ACT = {
   editVisit: el => visitSheet(null, el.dataset.vid),
   addPhoto: el => pickPhotos(el.dataset.id, null, false),
   camPhoto: el => pickPhotos(el.dataset.id, null, true),
+  menuPhoto: el => pickPhotos(el.dataset.id, null, false, null, 'menu'),
   viewPhoto: el => openViewer(el.dataset.pid),
   wineStar: async el => { const { id, n } = el.dataset; const cur = ((st(id).wines || {})[n] || {}).s; const v = +el.dataset.v === cur ? 0 : +el.dataset.v; await saveWine(id, n, { s: v, t: true }); const row = el.closest('.wine'); row.outerHTML = wineRow(id, n); },
   wineNote: el => wineSheet(el.dataset.id, el.dataset.n),
@@ -876,7 +900,7 @@ const ACT = {
   showRoute: el => { const box = el.closest('.card').querySelector('.routebox'); if (box.innerHTML) { box.innerHTML = ''; return; } box.innerHTML = navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${el.dataset.src}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>'; },
   baseFlint: async () => { S.kv.settings.base = { ...G.defaultBase }; await saveKV('settings'); toast('Base set to Flint Hill'); renderPrefs(); },
   baseGPS: async () => { try { const p = await getGPS(); S.kv.settings.base = { name: 'My location', lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base set to your location'); renderPrefs(); } catch (e) { toast('Location unavailable — allow location access'); } },
-  saveMM: async () => { const v = $('#mm').value.trim(); if (v && !/mid=[\w-]+/.test(v)) { toast('That link has no map ID (mid=…)'); return; } S.kv.settings.myMaps = v; await saveKV('settings'); toast('Map link saved'); },
+  saveMM: async () => { let v = $('#mm').value.trim().replace(/^https?:/i, m => m.toLowerCase()); if (v && !/^https?:\/\//.test(v)) { toast('Paste a full link starting with https://'); return; } S.kv.settings.myMaps = v; await saveKV('settings'); toast('Map link saved'); },
   refine: () => { toast('Refining pins — about a minute'); refinePins(true); },
   export: () => exportData(),
   import: () => $('#importPick').click(),
