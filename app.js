@@ -333,7 +333,7 @@ function renderHome() {
     <div class="section"><div class="section-head"><h3>${esc(next.title)}</h3></div>
       <div class="hcards">${next.ids.map((id, i) => { const w = W(id); return `<a class="card pick" href="#w-${id}"><span class="rank">${String(i + 1).padStart(2, '0')} · ${esc(w.town)}</span><h4>${esc(w.n)}</h4><p>${esc(next.notes[id])}</p>${isVisited(id) ? '<span class="chip open">' + svg('check') + 'Visited</span>' : ''}</a>`; }).join('')}</div></div>
     <div class="section"><h3>Collections</h3><div class="collections">
-      ${['glist', 'scenery', 'food', 'gems', 'bravo', 'plan'].map(k => `<a class="coll" href="#wineries" data-act="coll" data-k="${k}"><b>${esc(G.picks[k].title)}</b><span>${G.picks[k].ids.length} wineries</span></a>`).join('')}
+      ${['added', 'glist', 'scenery', 'food', 'gems', 'bravo', 'plan'].map(k => `<a class="coll" href="#wineries" data-act="coll" data-k="${k}"><b>${esc(G.picks[k].title)}</b><span>${G.picks[k].ids.length} wineries</span></a>`).join('')}
       <a class="coll" href="#wineries" data-act="filter" data-f="want"><b>Our want-to-go list</b><span>${all.filter(w => st(w.id).status === 'want').length} saved</span></a>
     </div></div>
     <div class="section"><div class="section-head"><h3>Latest from the journal</h3><a href="#journal">Journal</a></div>
