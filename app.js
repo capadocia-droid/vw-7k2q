@@ -279,7 +279,7 @@ async function openViewer(pid) {
 /* ---------------- router ---------------- */
 const view = $('#view');
 let mapInst = null;
-function setTop(title, { back = false, actions = '' } = {}) { $('#title').textContent = title; $('#backBtn').hidden = !back; $('#topActions').innerHTML = actions; }
+function setTop(title, { back = false, actions = '', logo = false } = {}) { $('#logo').hidden = !logo; $('#title').textContent = title; $('#backBtn').hidden = !back; $('#topActions').innerHTML = actions; }
 function route() {
   closeAllSheets();
   if (mapInst) { mapInst.remove(); mapInst = null; }
@@ -299,7 +299,7 @@ $('#backBtn').addEventListener('click', () => { if (history.length > 1) history.
 let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if ((location.hash || '#home') === '#home') renderHome(); });
 function renderHome() {
-  setTop('VA Wine Passport', { actions: `<button class="iconbtn" data-act="go" data-to="prefs" aria-label="Settings">${svg('gear')}</button>` });
+  setTop('VA Wine Passport', { logo: true, actions: `<button class="iconbtn" data-act="go" data-to="prefs" aria-label="Settings">${svg('gear')}</button>` });
   const all = ALL(); const visited = all.filter(w => isVisited(w.id)).length;
   const winesRated = Object.values(S.state).reduce((n, s) => n + Object.values(s.wines || {}).filter(x => x.s).length, 0);
   const bottles = Object.values(S.state).reduce((n, s) => n + (s.bottles || []).reduce((m, b) => m + (+b.qty || 1), 0), 0);
@@ -323,7 +323,7 @@ function renderHome() {
     <div class="stats section">
       <div class="stat"><b class="mono">${visited}<span class="muted" style="font-size:14px">/${all.length}</span></b><span>Visited</span></div>
       <div class="stat"><b class="mono">${S.visits.length}</b><span>Visits</span></div>
-      <div class="stat"><b class="mono">${winesRated}</b><span>Wines rated</span></div>
+      <div class="stat"><b class="mono">${winesRated}</b><span>Wines</span></div>
       <div class="stat"><b class="mono">${bottles}</b><span>Bottles</span></div>
     </div>
     <div class="section"><div class="section-head"><h3>Open now near ${esc(b.name.split(',')[0])}</h3><a href="#wineries" data-act="filter" data-f="open">See all</a></div>
