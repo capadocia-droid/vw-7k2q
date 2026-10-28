@@ -1,6 +1,6 @@
 /* Offline support: app shell cached on install; fonts and map tiles cached as you browse. */
-const SHELL = 'vawine-shell-v9';
-const RUNTIME = 'vawine-runtime-v9';
+const SHELL = 'vawine-shell-v10';
+const RUNTIME = 'vawine-runtime-v10';
 const FILES = ['./', './index.html', './app.js', './data.js', './leaflet.js', './leaflet.css', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -18,7 +18,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin === location.origin) {
     // network-first for the app itself so updates arrive; cache fallback offline
-    e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(SHELL).then(c => c.put(req, copy)); return r; }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(r => { const copy = r.clone(); caches.open(SHELL).then(c => c.put(req, copy)); return r; }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
     return;
   }
   if (/tile\.openstreetmap\.org|fonts\.(googleapis|gstatic)\.com/.test(url.host)) {
