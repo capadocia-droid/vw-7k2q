@@ -41,7 +41,8 @@
   --stamp-paper:#1E1B23; color-scheme:dark; }
 
 *{box-sizing:border-box}
-html,body{height:100%}
+html{height:100%}
+body{min-height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);-webkit-tap-highlight-color:transparent;overscroll-behavior-y:contain}
 img{max-width:100%;display:block}
 [hidden]{display:none!important}
@@ -253,6 +254,7 @@ details.more summary::-webkit-details-marker{display:none}
 
 /* ---------- journal ---------- */
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--sunk);border-radius:999px;padding:3px;gap:3px}
+.seg.sticky{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--tb,60px) + 6px);z-index:15;box-shadow:0 0 0 6px var(--bg),0 -14px 0 6px var(--bg)}
 .seg button{appearance:none;border:0;background:transparent;border-radius:999px;padding:8px 6px;font-weight:600;font-size:13.5px;cursor:pointer;color:var(--muted)}
 .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .passport{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}

@@ -294,18 +294,54 @@ async function openViewer(pid) {
 const view = $('#view');
 let mapInst = null;
 function setTop(title, { back = false, actions = '', logo = false } = {}) { $('#logo').hidden = !logo; $('#title').textContent = title; $('#backBtn').hidden = !back; $('#topActions').innerHTML = actions; }
+/* remembered UI: scroll per screen, last screen per tab, filters, journal tab, map view — survives back, tab switches, and relaunch */
+const UI = (() => { try { return JSON.parse(localStorage.getItem('vawine-ui') || '{}'); } catch (e) { return {}; } })();
+const scrollMem = UI.scrollMem || {}; const tabMem = UI.tabMem || {}; const xMem = UI.xMem || {}; const openMem = UI.openMem || {};
+try { history.scrollRestoration = 'manual'; } catch (e) { /* older browsers */ }
+let curHash = null;
+const skey = h => (h === 'journal' ? 'journal:' + jTab : h);
+const tabOf = h => (h.startsWith('w-') ? 'wineries' : h.startsWith('trip-') ? 'plan' : h === 'prefs' ? 'home' : h);
+function saveUI() {
+  try {
+    if (curHash) { scrollMem[skey(curHash)] = scrollY; saveX(); }
+    const keys = Object.keys(scrollMem); if (keys.length > 120) keys.slice(0, keys.length - 120).forEach(k => delete scrollMem[k]);
+    localStorage.setItem('vawine-ui', JSON.stringify({ F: { ...F, on: [...F.on] }, jTab, MF: { mode: MF.mode, on: [...MF.on], view: MF.view, peek: MF.peek || null }, tabMem, scrollMem, xMem, openMem, last: curHash, t: Date.now() }));
+  } catch (e) { /* storage unavailable: nothing to remember */ }
+}
+const X_SEL = '.hcards, .badges, .scroller, .actions, .strip';
+function saveX() { if (!curHash) return; const xs = $$(X_SEL, view).map(e => e.scrollLeft); if (xs.some(Boolean)) xMem[skey(curHash)] = xs; else delete xMem[skey(curHash)]; }
+function restoreX(h) { const xs = xMem[skey(h)]; if (!xs) return; $$(X_SEL, view).forEach((e, i) => { if (xs[i]) e.scrollLeft = xs[i]; }); }
+function restoreUI() {
+  if (UI.F) { Object.assign(F, UI.F); F.on = new Set(UI.F.on || []); }
+  if (UI.jTab) jTab = UI.jTab;
+  if (UI.MF) { MF.mode = UI.MF.mode || 'guide'; MF.on = new Set(UI.MF.on || []); MF.view = UI.MF.view || null; MF.peek = UI.MF.peek || null; }
+  if (UI.last && UI.last !== 'home' && (!location.hash || location.hash === '#home') && Date.now() - (UI.t || 0) < 24 * 3600e3) history.replaceState(null, '', '#' + UI.last);
+}
 function route() {
+  if (curHash !== null && !keepScroll) { scrollMem[skey(curHash)] = scrollY; saveX(); }
   closeAllSheets();
   if (mapInst) { mapInst.remove(); mapInst = null; }
   const h = decodeURIComponent(location.hash.slice(1)) || 'home';
-  const tab = h.startsWith('w-') ? 'wineries' : h.startsWith('trip-') ? 'plan' : h === 'prefs' ? 'home' : h;
+  const tab = tabOf(h); curHash = h; tabMem[tab] = h;
   $$('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
   view.classList.toggle('full', h === 'map');
-  if (h.startsWith('w-')) return renderWinery(h.slice(2));
-  if (h.startsWith('trip-')) return renderTrip(h.slice(5));
-  return ({ home: renderHome, wineries: renderList, map: renderMap, journal: renderJournal, plan: renderPlan, prefs: renderPrefs }[h] || renderHome)();
+  const r = h.startsWith('w-') ? renderWinery(h.slice(2)) : h.startsWith('trip-') ? renderTrip(h.slice(5))
+    : ({ home: renderHome, wineries: renderList, map: renderMap, journal: renderJournal, plan: renderPlan, prefs: renderPrefs }[h] || renderHome)();
+  Promise.resolve(r).then(() => { restoreX(h); if (keepScroll) return; const y = scrollMem[skey(h)] || 0; window.scrollTo(0, y); requestAnimationFrame(() => { window.scrollTo(0, y); restoreX(h); }); saveUI(); });
+  return r;
 }
+$('#tabs').addEventListener('click', e => {
+  const a = e.target.closest('a[data-tab]'); if (!a) return; e.preventDefault();
+  const t = a.dataset.tab; const cur = tabOf(curHash || 'home');
+  if (cur !== t) return go(tabMem[t] || t);
+  if (curHash !== t) return go(t);                       // second tap: back to the tab's main screen
+  scrollMem[skey(t)] = 0; window.scrollTo({ top: 0, behavior: 'smooth' });  // third tap: top
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveUI(); });
+document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.mk) { openMem[d.dataset.mk] = d.open; saveUI(); } }, true);
+window.addEventListener('pagehide', saveUI);
 function go(h) { if (location.hash === '#' + h) route(); else location.hash = h; }
+try { new ResizeObserver(() => document.documentElement.style.setProperty('--tb', $('#topbar').offsetHeight + 'px')).observe($('#topbar')); } catch (e) { /* fallback height */ }
 window.addEventListener('scroll', () => $('#topbar').classList.toggle('scrolled', scrollY > 4), { passive: true });
 $('#backBtn').addEventListener('click', () => { if (history.length > 1) history.back(); else go('home'); });
 
@@ -490,8 +526,8 @@ function renderList() {
       <div class="wlist" id="wl"></div>
     </div>`;
   $('#sort').value = F.sort;
-  $('#q').addEventListener('input', e => { F.q = e.target.value; fillList(); });
-  $('#sort').addEventListener('change', e => { F.sort = e.target.value; fillList(); });
+  $('#q').addEventListener('input', e => { F.q = e.target.value; fillList(); saveUI(); });
+  $('#sort').addEventListener('change', e => { F.sort = e.target.value; fillList(); saveUI(); });
   fillList();
 }
 function fillList() {
@@ -510,7 +546,6 @@ let wxCache = {};
 async function renderWinery(id) {
   const w = W(id); if (!w) { view.innerHTML = '<div class="empty" style="margin-top:20px">That winery isn’t in the guide.</div>'; setTop('Not found', { back: true }); return; }
   const s = st(id); setTop(w.n, { back: true });
-  if (!keepScroll) window.scrollTo(0, 0);
   const rc = regionColor(w.region); const sc = score(id);
   const cover = s.cover ? S.photos.find(p => p.id === s.cover) : null;
   const coverURL = cover ? await fullURL(cover.id) : null;
@@ -575,7 +610,7 @@ async function renderWinery(id) {
   <div class="section"><h3>Weather</h3><div id="wx"><div class="mapholder" style="aspect-ratio:auto;padding:14px">Loading forecast…</div></div></div>
   <div class="section"><h3>Our scorecard</h3>
     <div class="card scorecard">
-      <div class="total"><b class="mono" id="scTotal">${sc ?? '—'}</b><span class="muted small">${sc == null ? 'Move all three sliders to score it. ' : ''}out of 100 · scenery ${G.rubric.scenery}% · wine ${G.rubric.wine}% · experience ${G.rubric.experience}%</span></div>
+      <div class="total"><b class="mono" id="scTotal">${sc ?? '—'}</b><span class="muted small"><span id="scHint">${sc == null ? 'Move all three sliders to score it. ' : ''}</span>out of 100 · scenery ${G.rubric.scenery}% · wine ${G.rubric.wine}% · experience ${G.rubric.experience}%</span></div>
       ${['scenery', 'wine', 'experience'].map(k => `<div class="slider"><label for="sc-${k}">${k[0].toUpperCase() + k.slice(1)}</label><input type="range" min="1" max="10" step="1" id="sc-${k}" value="${sco[k] || 5}" data-sc="${k}" data-id="${id}" ${sco[k] ? '' : 'style="opacity:.45"'}><output id="o-${k}">${sco[k] || '–'}</output></div>`).join('')}
     </div></div>
   <div class="section"><div class="section-head"><h3>Our visits</h3><button class="linkbtn" data-act="logVisit" data-id="${id}">Log a visit</button></div>
@@ -610,8 +645,8 @@ function menuSection(w) {
   const block = (secs, wine) => secs.map(sc => `<div class="mi-sec">${esc(sc.sec)}</div>${sc.items.map(x => item(x, wine)).join('')}`).join('');
   return `<div class="section"><div class="section-head"><h3>Menu</h3><button class="linkbtn" data-act="menuPhoto" data-id="${w.id}">Add menu photo</button></div>
     ${m ? `<span class="small muted">${esc(m.source || 'Menu')}${m.asOf ? ' · ' + fmtDate(m.asOf) : ''}</span>
-      ${m.food ? `<details class="card menu" open><summary>Food${m.food.reduce((n, sc) => n + sc.items.length, 0) ? ` · ${m.food.reduce((n, sc) => n + sc.items.length, 0)} items` : ''}</summary>${block(m.food, false)}</details>` : ''}
-      ${m.wine ? `<details class="card menu"><summary>Wine list · ${m.wine.reduce((n, sc) => n + sc.items.length, 0)} wines <span class="small muted">· ${m.wine.some(sc => sc.items.some(x => x.g || x.b)) ? 'glass | bottle · ' : ''}tap to rate</span></summary>${block(m.wine, true)}</details>` : ''}
+      ${m.food ? `<details class="card menu" data-mk="${w.id}:food" ${openMem[w.id + ':food'] === false ? '' : 'open'}><summary>Food${m.food.reduce((n, sc) => n + sc.items.length, 0) ? ` · ${m.food.reduce((n, sc) => n + sc.items.length, 0)} items` : ''}</summary>${block(m.food, false)}</details>` : ''}
+      ${m.wine ? `<details class="card menu" data-mk="${w.id}:wine" ${openMem[w.id + ':wine'] ? 'open' : ''}><summary>Wine list · ${m.wine.reduce((n, sc) => n + sc.items.length, 0)} wines <span class="small muted">· ${m.wine.some(sc => sc.items.some(x => x.g || x.b)) ? 'glass | bottle · ' : ''}tap to rate</span></summary>${block(m.wine, true)}</details>` : ''}
       ${m.note ? `<span class="small muted">${esc(m.note)}</span>` : ''}` : ''}
     ${mp.length ? `<div class="strip">${mp.map(p => `<img src="${thumbURL(p)}" alt="Menu photo" data-act="viewPhoto" data-pid="${p.id}">`).join('')}</div>` : m ? '' : '<div class="empty">No menu yet. Photograph the menu on your visit, then send the photos to Claude to have it typed into the guide.</div>'}
   </div>`;
@@ -745,10 +780,12 @@ function initLeaflet() {
   });
   if (MF.view) mapInst.setView(MF.view.c, MF.view.z);
   else if (pts.length) mapInst.fitBounds(L.latLngBounds(pts).pad(0.12)); else mapInst.setView([b.lat, b.lng], 9);
-  mapInst.on('moveend', () => { MF.view = { c: mapInst.getCenter(), z: mapInst.getZoom() }; });
-  mapInst.on('click', () => { const pk = $('#peek'); if (pk) pk.hidden = true; });
+  mapInst.on('moveend', () => { const c = mapInst.getCenter(); MF.view = { c: { lat: c.lat, lng: c.lng }, z: mapInst.getZoom() }; saveUI(); });
+  mapInst.on('click', () => { const pk = $('#peek'); if (pk) pk.hidden = true; MF.peek = null; saveUI(); });
+  if (MF.peek && W(MF.peek)) peek(W(MF.peek));
 }
 function peek(w) {
+  MF.peek = w.id; saveUI();
   const pk = $('#peek'); const d = distFromBase(w);
   pk.innerHTML = `<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font:18px var(--f-display)">${esc(w.n)}</div><div class="small muted">${esc(w.town)} · ${Math.round(d)} mi · ~${fmtDrive(driveMin(d))}</div></div><button class="iconbtn" data-act="closePeek" aria-label="Close">${svg('x')}</button></div>
     <div class="row">${statusChip(w)}${wIcons(w)}</div>
@@ -783,7 +820,7 @@ function renderJournal() {
     body = `<div class="section"><div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat"><b class="mono">${total}</b><span>Bottles brought home</span></div><div class="stat"><b class="mono">$${spend.toFixed(0)}</b><span>Spent</span></div></div></div>
       <div class="section">${rows.length ? `<div class="card" style="padding:2px 14px"><ul class="plain">${rows.map(b => `<li><b>${esc(b.wine)}</b>${b.vintage ? ' ' + esc(b.vintage) : ''} <span class="muted small">× ${esc(b.qty || 1)}</span><div class="small muted"><a href="#w-${b.id}">${esc(W(b.id)?.n || '')}</a>${b.date ? ' · ' + fmtDate(b.date) : ''}${b.price ? ' · $' + esc(b.price) : ''}</div></li>`).join('')}</ul></div>` : '<div class="empty">Add bottles from a winery page.</div>'}</div>`;
   }
-  view.innerHTML = `<div class="seg" style="margin-top:8px">${tabs.map(([k, l]) => `<button class="${jTab === k ? 'on' : ''}" data-act="jtab" data-k="${k}">${l}</button>`).join('')}</div>${body}`;
+  view.innerHTML = `<div class="seg sticky" style="margin-top:8px">${tabs.map(([k, l]) => `<button class="${jTab === k ? 'on' : ''}" data-act="jtab" data-k="${k}">${l}</button>`).join('')}</div>${body}`;
 }
 
 /* ---------------- passport stamps & region badges ---------------- */
@@ -945,7 +982,7 @@ function renderTrip(tid) {
     return `<div class="section day"><div class="dayhead"><b>${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}</b>${hol ? `<span class="chip warn">${svg('warn')}${hol} · confirm hours</span>` : ''}</div>
       <div class="card">${stops.length ? `<div class="small muted">From ${esc(t.base.name)}</div>${rows}<div class="leg">↓ ${Math.round(back)} mi back · day total ~${Math.round(total)} mi, ${fmtDrive(driveMin(total))} driving</div>` : '<div class="small muted">No stops yet.</div>'}
         <div class="row" style="margin-top:12px"><button class="btn" data-act="addStop" data-tid="${tid}" data-d="${d}">${svg('plus')}Add stop</button>${stops.length ? `<a class="btn primary" href="${navDay}" target="_blank" rel="noopener">${svg('nav')}Navigate day</a><button class="btn" data-act="showRoute" data-src="${esc(embed)}">${svg('route')}Route map</button><button class="btn" data-act="shareTrip" data-tid="${tid}" data-d="${d}">${svg('share')}Share day</button>` : ''}</div>
-        <div class="routebox"></div>
+        <div class="routebox" data-rk="${tid}:${d}">${openMem['route:' + tid + ':' + d] && stops.length ? (navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${esc(embed)}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>') : ''}</div>
         ${openList.length ? `<div style="margin-top:12px"><h3 style="margin-bottom:4px">Open this day nearby</h3>${openList.map(({ w }) => `<div class="sugg"><span><a href="#w-${w.id}" style="color:var(--ink);font-weight:600;text-decoration:none">${esc(w.n)}</a><br><span class="small muted">${fmtRange(hoursOn(w, dt))} · ${Math.round(roadMi(bp, pos(w)))} mi${st(w.id).status === 'want' ? ' · on our list' : ''}${isVisited(w.id) ? ' · visited' : ''}</span></span><button class="btn" data-act="quickAdd" data-tid="${tid}" data-d="${d}" data-id="${w.id}">${svg('plus')}Add</button></div>`).join('')}</div>` : ''}
       </div></div>`;
   }).join('');
@@ -1272,7 +1309,7 @@ const ACT = {
   install: async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; renderHome(); },
   filter: (el, e) => { e.preventDefault(); F.on = new Set([el.dataset.f]); F.coll = ''; F.region = ''; go('wineries'); },
   coll: (el, e) => { e.preventDefault(); F.coll = el.dataset.k; if (el.dataset.k) { F.on.clear(); F.region = ''; } go('wineries'); },
-  toggleF: el => { const f = el.dataset.f; F.on.has(f) ? F.on.delete(f) : F.on.add(f); if (f === 'visited') F.on.delete('unvisited'); if (f === 'unvisited') F.on.delete('visited'); $$('#fchips .fchip').forEach(b => b.classList.toggle('on', F.on.has(b.dataset.f))); fillList(); },
+  toggleF: el => { const f = el.dataset.f; F.on.has(f) ? F.on.delete(f) : F.on.add(f); if (f === 'visited') F.on.delete('unvisited'); if (f === 'unvisited') F.on.delete('visited'); $$('#fchips .fchip').forEach(b => b.classList.toggle('on', F.on.has(b.dataset.f))); fillList(); saveUI(); },
   region: el => { F.region = el.dataset.r; renderList(); },
   status: async el => { const id = el.dataset.id, s = el.dataset.s; const cur = st(id).status; if (s === 'visited' && cur === 'visited' && visitsOf(id).length) { toast('Has logged visits — delete them to unmark'); return; } await setSt(id, { status: cur === s ? '' : s }); toast(cur === s ? 'Removed' : s === 'visited' ? 'Marked visited — stamp collected' : 'Added to want-to-go'); renderWinery(id); checkBadges(); },
   fav: async el => { const id = el.dataset.id; await setSt(id, { fav: !st(id).fav }); renderWinery(id); },
@@ -1294,9 +1331,9 @@ const ACT = {
   addWinery: () => customSheet(),
   mapMode: el => { MF.mode = el.dataset.m; renderMap(); },
   mapF: el => { const f = el.dataset.f; MF.on.has(f) ? MF.on.delete(f) : MF.on.add(f); if (f === 'visited') MF.on.delete('unvisited'); if (f === 'unvisited') MF.on.delete('visited'); renderMap(); },
-  closePeek: () => { $('#peek').hidden = true; },
+  closePeek: () => { $('#peek').hidden = true; MF.peek = null; saveUI(); },
   locate: async () => { try { const p = await getGPS(); if (!mapInst) return; L.circleMarker(p, { radius: 8, color: '#fff', weight: 3, fillColor: '#2F7BEA', fillOpacity: 1 }).addTo(mapInst); mapInst.setView(p, 11); } catch (e) { toast('Location unavailable — allow location access'); } },
-  jtab: el => { jTab = el.dataset.k; renderJournal(); },
+  jtab: el => { scrollMem[skey('journal')] = scrollY; saveX(); jTab = el.dataset.k; renderJournal(); restoreX('journal'); window.scrollTo(0, scrollMem[skey('journal')] || 0); saveUI(); },
   newTrip: () => tripSheet(),
   editTrip: el => tripSheet(el.dataset.tid),
   shareTrip: el => shareTrip(el.dataset.tid, el.dataset.d),
@@ -1311,7 +1348,7 @@ const ACT = {
   quickAdd: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].push(el.dataset.id); await DB.put('trips', t); renderTrip(t.id); },
   rmStop: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].splice(+el.dataset.i, 1); await DB.put('trips', t); renderTrip(t.id); },
   mvStop: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); const a = t.days[el.dataset.d], i = +el.dataset.i, j = i + +el.dataset.dir; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; await DB.put('trips', t); renderTrip(t.id); },
-  showRoute: el => { const box = el.closest('.card').querySelector('.routebox'); if (box.innerHTML) { box.innerHTML = ''; return; } box.innerHTML = navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${el.dataset.src}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>'; },
+  showRoute: el => { const box = el.closest('.card').querySelector('.routebox'); const rk = 'route:' + box.dataset.rk; if (box.innerHTML) { box.innerHTML = ''; delete openMem[rk]; saveUI(); return; } openMem[rk] = true; saveUI(); box.innerHTML = navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${el.dataset.src}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>'; },
   baseFlint: async () => { S.kv.settings.base = { ...G.defaultBase }; await saveKV('settings'); toast('Base set to Flint Hill'); renderPrefs(); },
   baseGPS: async () => { try { const p = await getGPS(); S.kv.settings.base = { name: 'My location', lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base set to your location'); renderPrefs(); } catch (e) { toast('Location unavailable — allow location access'); } },
   saveMM: async () => { let v = $('#mm').value.trim().replace(/^https?:/i, m => m.toLowerCase()); if (v && !/^https?:\/\//.test(v)) { toast('Paste a full link starting with https://'); return; } S.kv.settings.myMaps = v; await saveKV('settings'); toast('Map link saved'); },
@@ -1338,7 +1375,7 @@ document.addEventListener('change', async e => {
   const t = e.target;
   if (t.dataset.sc) {
     const id = t.dataset.id; const sc = Object.assign({}, st(id).score); ['scenery', 'wine', 'experience'].forEach(k => { const inp = $('#sc-' + k); if (k === t.dataset.sc || sc[k]) sc[k] = +inp.value; });
-    await setSt(id, { score: sc }); const v = score(id); $('#scTotal').textContent = v ?? '—';
+    await setSt(id, { score: sc }); const v = score(id); $('#scTotal').textContent = v ?? '—'; if ($('#scHint')) $('#scHint').textContent = v == null ? 'Move all three sliders to score it. ' : '';
   }
   if (t.dataset.wineT !== undefined) await saveWine(t.dataset.id, t.dataset.wineT, { t: t.checked });
 });
@@ -1352,6 +1389,7 @@ window.addEventListener('resize', debounce(() => paintRidges(), 200));
 (async function boot() {
   try { await loadAll(); } catch (e) { view.innerHTML = `<div class="empty" style="margin-top:24px">This browser blocked on-device storage, so nothing can be saved. Open the app in Chrome (not a private tab). <br><span class="small">${esc(e.message || e)}</span></div>`; return; }
   applyTheme();
+  restoreUI();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); route(); });
   route();
   checkBadges();
