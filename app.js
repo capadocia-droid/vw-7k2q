@@ -343,7 +343,12 @@ window.addEventListener('pagehide', saveUI);
 function go(h) { if (location.hash === '#' + h) route(); else location.hash = h; }
 try { new ResizeObserver(() => document.documentElement.style.setProperty('--tb', $('#topbar').offsetHeight + 'px')).observe($('#topbar')); } catch (e) { /* fallback height */ }
 window.addEventListener('scroll', () => $('#topbar').classList.toggle('scrolled', scrollY > 4), { passive: true });
-$('#backBtn').addEventListener('click', () => { if (history.length > 1) history.back(); else go('home'); });
+const parentOf = h => (h.startsWith('w-') ? 'wineries' : h.startsWith('trip-') ? 'plan' : 'home');
+// The first screen the app opens on (often a restored one) has no in-app page behind it: back goes to its parent list instead of leaving the app.
+$('#backBtn').addEventListener('click', () => {
+  if (history.state && history.state.root) { history.replaceState({ root: true }, '', '#' + parentOf(curHash || 'home')); route(); }
+  else history.back();
+});
 
 /* ---------------- HOME ---------------- */
 let installEvt = null;
@@ -1390,6 +1395,7 @@ window.addEventListener('resize', debounce(() => paintRidges(), 200));
   try { await loadAll(); } catch (e) { view.innerHTML = `<div class="empty" style="margin-top:24px">This browser blocked on-device storage, so nothing can be saved. Open the app in Chrome (not a private tab). <br><span class="small">${esc(e.message || e)}</span></div>`; return; }
   applyTheme();
   restoreUI();
+  history.replaceState({ root: true }, '', location.hash || '#home');
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); route(); });
   route();
   checkBadges();
