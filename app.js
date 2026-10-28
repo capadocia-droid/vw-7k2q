@@ -1090,50 +1090,90 @@ function routeURL(t, stops) {
 }
 function tripDays(t, onlyDay) { return Object.keys(t.days).sort().filter(d => !onlyDay || d === onlyDay).map(d => ({ d, dt: fromISO(d), stops: t.days[d].map(W).filter(Boolean) })).filter(x => x.stops.length || onlyDay); }
 const dayTitle = dt => `${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}${holiday(dt) ? ' (' + holiday(dt) + ')' : ''}`;
-const stopLine = (t, d, dt, w) => { const h = hoursOn(w, dt); const m = smeta(t, d, w.id); return `${w.n} (${w.town}) · ${h ? (h.length ? fmtRange(h) : 'closed that day') : 'check hours'}${m.time ? ' · arrive ~' + fmtClock(m.time) : ''}`; };
-function tripText(t, onlyDay) {
+const addrOf = w => w.addr || (G.addr && G.addr[w.id]) || `${w.town}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', VA'}`;
+const briefOf = w => { const f = (w.features || []).slice(0, 3); if (f.length) return f.map((x, i) => i ? x.charAt(0).toLowerCase() + x.slice(1) : x).join(', ') + '.'; return (w.why || '').split(/(?<=\.)\s/)[0] || ''; };
+const DOGLBL = { yes: 'Dogs welcome', limited: 'Dogs in some areas only', no: 'No dogs', unknown: 'Dog policy unconfirmed' };
+const dogOf = w => { const d = (w.dogs || '').trim(); return d ? `Dogs: ${d}` : (DOGLBL[w.dog] || 'Dog policy unconfirmed') + '.'; };
+const legMin = mi => driveMin(mi) + 3; // + local roads and driveways
+const legTxt = (mi, min) => `${mi < 10 ? mi.toFixed(1) : Math.round(mi)} mi · ~${fmtDrive(min ?? legMin(mi))}`;
+/* per-day legs: estimates (straight line × 1.3, 40 mph) */
+function dayLegs(t, stops) {
+  const b = [t.base.lat, t.base.lng]; let prev = b, prevName = t.base.name || 'base', tot = 0;
+  const legs = stops.map(w => { const p = pos(w); const mi = roadMi(prev, p); tot += mi; const r = { mi, from: prevName }; prev = p; prevName = w.n; return r; });
+  const back = stops.length ? roadMi(prev, b) : 0; tot += back;
+  const totMin = legs.reduce((a, l) => a + legMin(l.mi), 0) + (stops.length ? legMin(back) : 0);
+  return { legs, back, tot, totMin };
+}
+const hoursTxt = (w, dt) => { const h = hoursOn(w, dt); return h ? (h.length ? 'Open ' + fmtRange(h) : 'Closed that day') : 'Check hours'; };
+function tripText(t, onlyDay, compact) {
   const out = [onlyDay ? `${t.name} · ${dayTitle(fromISO(onlyDay))}` : t.name];
   if (!onlyDay) out.push(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)}`);
   out.push(`Staying in ${t.base.name}`); if (t.notes && !onlyDay) out.push(t.notes);
   const ds = tripDays(t, onlyDay);
   ds.forEach(({ d, dt, stops }) => {
-    out.push(''); if (!onlyDay) out.push(dayTitle(dt));
+    out.push(''); if (!onlyDay) out.push(`— ${dayTitle(dt)} —`);
     if (!stops.length) { out.push('No stops planned yet.'); return; }
-    stops.forEach((w, i) => { out.push(`${i + 1}. ${stopLine(t, d, dt, w)}`); const m = smeta(t, d, w.id); if (m.note) out.push(`   ${m.note}`); });
-    out.push(`Route: ${routeURL(t, stops)}`);
+    const L = dayLegs(t, stops);
+    stops.forEach((w, i) => {
+      const m = smeta(t, d, w.id);
+      out.push(`${i + 1}. ${w.n}`);
+      out.push(`   ${addrOf(w)}`);
+      out.push(`   ${legTxt(L.legs[i].mi)} from ${L.legs[i].from}`);
+      out.push(`   ${hoursTxt(w, dt)}${m.time ? ' · arrive ~' + fmtClock(m.time) : ''}`);
+      const b = briefOf(w); if (b) out.push(`   ${b}`);
+      out.push(`   ${dogOf(w)}`);
+      if (m.note) out.push(`   Note: ${m.note}`);
+      if (!compact) out.push('');
+    });
+    if (compact) out.push('');
+    out.push(`Back to ${t.base.name}: ${legTxt(L.back)}`);
+    out.push(`Day's driving: ${legTxt(L.tot, L.totMin)}`);
+    out.push(`Directions: ${routeURL(t, stops)}`);
   });
   if (!ds.length) out.push('', 'No stops planned yet.');
-  out.push('', 'Hours are published schedules; confirm before you go.');
+  out.push('', 'Distances and drive times are estimates; hours are published schedules, so confirm before you go.');
   return out.join('\n');
 }
 function tripHTML(t, onlyDay) {
   const A = (href, txt) => `<a href="${esc(href)}" style="color:#7B1E3C">${esc(txt)}</a>`;
+  const G2 = 'color:#665F70';
   let h = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#221A26"><h2 style="margin:0 0 4px;font-family:Georgia,serif">${esc(onlyDay ? `${t.name} · ${dayTitle(fromISO(onlyDay))}` : t.name)}</h2>`;
-  h += `<div style="color:#665F70">${onlyDay ? '' : esc(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)} · `)}Staying in ${esc(t.base.name)}</div>`;
+  h += `<div style="${G2}">${onlyDay ? '' : esc(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)} · `)}Staying in ${esc(t.base.name)}</div>`;
   if (t.notes && !onlyDay) h += `<p>${esc(t.notes)}</p>`;
   tripDays(t, onlyDay).forEach(({ d, dt, stops }) => {
-    if (!onlyDay) h += `<h3 style="margin:18px 0 4px;font-family:Georgia,serif">${esc(dayTitle(dt))}</h3>`;
+    if (!onlyDay) h += `<h3 style="margin:20px 0 4px;font-family:Georgia,serif">${esc(dayTitle(dt))}</h3>`;
     if (!stops.length) { h += '<p>No stops planned yet.</p>'; return; }
-    h += '<ol style="margin:4px 0 6px;padding-left:22px">' + stops.map(w => { const hr = hoursOn(w, dt); const m = smeta(t, d, w.id); return `<li style="margin:2px 0">${A(mapsQ(w), w.n)} <span style="color:#665F70">(${esc(w.town)}) · ${esc(hr ? (hr.length ? fmtRange(hr) : 'closed that day') : 'check hours')}${m.time ? ' · arrive ~' + esc(fmtClock(m.time)) : ''}</span>${m.note ? `<br><i>${esc(m.note)}</i>` : ''}</li>`; }).join('') + '</ol>';
-    h += `<div>${A(routeURL(t, stops), 'Directions for the day')}</div>`;
+    const L = dayLegs(t, stops);
+    h += '<ol style="margin:4px 0 6px;padding-left:22px">' + stops.map((w, i) => {
+      const m = smeta(t, d, w.id); const b = briefOf(w);
+      return `<li style="margin:0 0 12px"><div style="${G2};font-size:13px">🚗 ${esc(legTxt(L.legs[i].mi))} from ${esc(L.legs[i].from)}</div>`
+        + `<b>${A(mapsQ(w), w.n)}</b><br><span style="${G2}">${esc(addrOf(w))}</span><br>`
+        + `${esc(hoursTxt(w, dt))}${m.time ? ' · arrive ~' + esc(fmtClock(m.time)) : ''}<br>`
+        + (b ? `${esc(b)}<br>` : '') + `<span style="${G2}">🐕 ${esc(dogOf(w))}</span>`
+        + (m.note ? `<br><i>Note: ${esc(m.note)}</i>` : '') + '</li>';
+    }).join('') + '</ol>';
+    h += `<div style="${G2};font-size:13px">🚗 Back to ${esc(t.base.name)}: ${esc(legTxt(L.back))}</div>`;
+    h += `<div><b>Day's driving:</b> ${esc(legTxt(L.tot, L.totMin))} · ${A(routeURL(t, stops), 'Directions for the day')}</div>`;
   });
-  return h + '<p style="color:#665F70;font-size:13px;margin-top:18px">Hours are published schedules; confirm before you go.</p></div>';
+  return h + '<p style="color:#665F70;font-size:13px;margin-top:18px">Distances and drive times are estimates; hours are published schedules, so confirm before you go.</p></div>';
 }
 function shareTrip(tid, day) {
   const t = S.trips.find(x => x.id === tid); if (!t) return;
   const title = day ? `${t.name} · ${fmtDate(day)}` : t.name; const text = tripText(t, day || null);
+  const body = tripText(t, day || null, true);
+  let mailHref = `mailto:?subject=${enc(title)}&body=${enc(body)}`;
+  if (mailHref.length > 7500) mailHref = `mailto:?subject=${enc(title)}&body=${enc('(Itinerary is long: it was copied — paste it here.)\n\n')}`;
   const el = openSheet(`<h2>Share ${esc(day ? dayTitle(fromISO(day)) : t.name)}</h2>
     <div class="stack">
-      <button class="btn block shopt" id="shEmail">${svg('share')}<span style="text-align:left"><b>Email</b><br><span class="small muted" style="font-weight:400">Tappable winery names and “Directions” links, no long web addresses</span></span></button>
-      <button class="btn block shopt" id="shMsg">${svg('share')}<span style="text-align:left"><b>Message or WhatsApp</b><br><span class="small muted" style="font-weight:400">Plain text with one short route link per day</span></span></button>
+      <a class="btn block shopt" id="shEmail" href="${esc(mailHref)}">${svg('share')}<span style="text-align:left"><b>Email</b><br><span class="small muted" style="font-weight:400">Opens a new email with the full itinerary already in it</span></span></a>
+      <a class="btn block shopt" id="shRich" href="mailto:?subject=${esc(enc(title))}">${svg('share')}<span style="text-align:left"><b>Email with tappable links</b><br><span class="small muted" style="font-weight:400">Opens a blank email; long-press the body and Paste for a formatted version with tappable names</span></span></a>
+      <button class="btn block shopt" id="shMsg">${svg('share')}<span style="text-align:left"><b>Message, WhatsApp or other app</b><br><span class="small muted" style="font-weight:400">Share sheet: Gmail works here too</span></span></button>
       <button class="btn block shopt" id="shCopy">${svg('share')}<span style="text-align:left"><b>Copy text</b></span></button>
     </div><div class="foot"><button class="btn" onclick="closeSheet()">Cancel</button></div>`);
-  $('#shEmail', el).onclick = async () => {
-    try { await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([tripHTML(t, day || null)], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]); }
-    catch (e) { try { await navigator.clipboard.writeText(text); } catch (er) { /* ignore */ } }
-    closeSheet(); toast('Itinerary copied — paste it into the email body');
-    setTimeout(() => { location.href = `mailto:?subject=${enc(title)}`; }, 600);
-  };
+  const copyRich = () => { try { const p = navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([tripHTML(t, day || null)], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]); p.catch(() => navigator.clipboard.writeText(text).catch(() => {})); } catch (e) { try { navigator.clipboard.writeText(text).catch(() => {}); } catch (er) { /* ignore */ } } };
+  // the link itself opens the mail app inside the tap (Chrome blocks delayed mailto); the copy runs alongside
+  $('#shEmail', el).onclick = () => { if (mailHref.length < 300) copyRich(); setTimeout(closeSheet, 400); };
+  $('#shRich', el).onclick = () => { copyRich(); toast('Copied — long-press the email body and tap Paste'); setTimeout(closeSheet, 400); };
   $('#shMsg', el).onclick = async () => { closeSheet(); if (navigator.share) { try { await navigator.share({ title, text }); return; } catch (e) { if (e.name === 'AbortError') return; } } try { await navigator.clipboard.writeText(text); toast('Itinerary copied — paste it anywhere'); } catch (e) { toast('Sharing isn’t available here'); } };
   $('#shCopy', el).onclick = async () => { closeSheet(); try { await navigator.clipboard.writeText(text); toast('Itinerary copied'); } catch (e) { toast('Copy isn’t available here'); } };
 }
