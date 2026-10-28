@@ -220,6 +220,14 @@ ul.plain li:last-child{border-bottom:0}
 .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .photos button{appearance:none;border:0;padding:0;aspect-ratio:1;max-width:100%;border-radius:8px;overflow:hidden;background:var(--sunk);cursor:pointer}
 .photos img{width:100%;height:100%;object-fit:cover}
+.ph{position:relative;aspect-ratio:1;max-width:100%;border-radius:8px;overflow:hidden;background:var(--sunk)}
+.photos .ph > button{width:100%;height:100%;aspect-ratio:auto;border-radius:0}
+.ph .cover{position:absolute;left:6px;top:6px;background:rgba(15,10,20,.68);color:#fff;font:600 10.5px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;border-radius:999px;pointer-events:none}
+.photos.arranging .ph{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;outline:2px dashed color-mix(in srgb,var(--claret) 45%,transparent);outline-offset:-2px}
+.photos.arranging .ph img{pointer-events:none;-webkit-touch-callout:none}
+.ph.dragging{z-index:5;cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.35);opacity:.95}
+.photos .ph > .phdel{position:absolute;right:5px;top:5px;width:30px;height:30px;aspect-ratio:auto;border-radius:50%;background:rgba(15,10,20,.72);color:#fff;border:0;display:grid;place-items:center;cursor:pointer}
+.photos .ph > .phdel svg{width:16px;height:16px}
 .visit{display:grid;grid-template-columns:52px 1fr;gap:12px}
 .visit .date{text-align:center;border-radius:10px;background:var(--claret-soft);color:var(--claret);padding:6px 0;height:max-content}
 .visit .date b{display:block;font:22px/1 var(--f-display)}

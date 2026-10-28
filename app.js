@@ -138,8 +138,9 @@ const st = id => S.state[id] || {};
 async function setSt(id, patch) { S.state[id] = Object.assign({}, st(id), patch); await DB.put('state', S.state[id], id); }
 
 /* ---------------- winery helpers ---------------- */
-const ALL = () => G.wineries.concat(S.custom);
-const W = id => ALL().find(w => w.id === id);
+const EVERY = () => G.wineries.concat(S.custom);
+const ALL = () => EVERY().filter(w => !(S.state[w.id] && S.state[w.id].hidden));   // removed wineries drop out of lists, map, picks, badges
+const W = id => EVERY().find(w => w.id === id);
 const pos = w => { const c = S.kv.coords[w.id]; return c && c[0] ? [c[0], c[1]] : [w.lat, w.lng]; };
 const regionColor = r => getComputedStyle(document.documentElement).getPropertyValue('--r-' + (r || 'shen')).trim() || '#3F5A7A';
 const gR = id => (G.gRatings && G.gRatings.r[id]) || null;
@@ -158,7 +159,52 @@ function score(id) {
   return Math.round((s.scenery * G.rubric.scenery + s.wine * G.rubric.wine + s.experience * G.rubric.experience) / 10);
 }
 const visitsOf = id => S.visits.filter(v => v.wid === id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-const photosOf = id => S.photos.filter(p => p.wid === id && p.kind !== 'menu').sort((a, b) => (b.date || 0) - (a.date || 0));
+function photosOf(id) {
+  const s = st(id); const ord = s.photoOrder || [];
+  const arr = S.photos.filter(p => p.wid === id && p.kind !== 'menu').sort((a, b) => (b.date || 0) - (a.date || 0));
+  const at = p => { const i = ord.indexOf(p.id); return i < 0 ? 1e6 : i; };
+  arr.sort((a, b) => at(a) - at(b));
+  if (!ord.length && s.cover) { const c = arr.findIndex(p => p.id === s.cover); if (c > 0) arr.unshift(arr.splice(c, 1)[0]); }
+  return arr;
+}
+let arrangeFor = null;
+async function setPhotoOrder(wid, order) { await setSt(wid, { photoOrder: order, cover: order[0] || null }); }
+async function deletePhoto(pid) {
+  const p = S.photos.find(x => x.id === pid); if (!p) return;
+  await DB.del('photos', pid); await DB.del('fulls', pid); S.photos = S.photos.filter(x => x.id !== pid);
+  if (urlCache.has(pid)) { URL.revokeObjectURL(urlCache.get(pid)); urlCache.delete(pid); }
+  const s = st(p.wid); if ((s.photoOrder || []).includes(pid) || s.cover === pid) await setPhotoOrder(p.wid, (s.photoOrder || []).filter(x => x !== pid));
+}
+function enableArrange(grid) {
+  if (!grid) return; let drag = null;
+  const pos = (t, e) => { t.style.transform = `translate(${e.clientX - drag.sx}px, ${e.clientY - drag.sy}px)`; };
+  grid.addEventListener('pointerdown', e => {
+    const t = e.target.closest('.ph'); if (!t || e.target.closest('.phdel')) return;
+    e.preventDefault(); drag = { t, sx: e.clientX, sy: e.clientY, moved: false }; t.setPointerCapture(e.pointerId); t.classList.add('dragging');
+  });
+  grid.addEventListener('pointermove', e => {
+    if (!drag) return; const t = drag.t; drag.moved = true; pos(t, e);
+    t.style.pointerEvents = 'none'; const under = document.elementFromPoint(e.clientX, e.clientY); t.style.pointerEvents = '';
+    const tgt = under && under.closest('.ph'); if (!tgt || tgt === t || tgt.parentNode !== grid) return;
+    const kids = [...grid.children]; const ol = t.offsetLeft, ot = t.offsetTop;
+    if (kids.indexOf(t) < kids.indexOf(tgt)) tgt.after(t); else tgt.before(t);
+    drag.sx += t.offsetLeft - ol; drag.sy += t.offsetTop - ot; pos(t, e);
+  });
+  const end = async () => {
+    if (!drag) return; const { t, moved } = drag; drag = null; t.classList.remove('dragging'); t.style.transform = '';
+    if (!moved) return;
+    const order = [...grid.querySelectorAll('.ph')].map(x => x.dataset.pid);
+    $$('.ph .cover', grid).forEach(c => c.remove()); const first = grid.querySelector('.ph'); if (first) first.insertAdjacentHTML('beforeend', '<span class="cover">Cover</span>');
+    await setPhotoOrder(grid.dataset.id, order); refreshHero(grid.dataset.id);
+  };
+  grid.addEventListener('pointerup', end); grid.addEventListener('pointercancel', end);
+}
+async function refreshHero(id) {
+  const hero = $('.hero'); if (!hero) return; const p = photosOf(id)[0];
+  const old = hero.querySelector('img, canvas'); if (!p) return;
+  const url = await fullURL(p.id) || thumbURL(p);
+  if (old && old.tagName === 'IMG') old.src = url; else if (old) old.outerHTML = `<img src="${url}" alt="">`;
+}
 const isVisited = id => st(id).status === 'visited' || S.visits.some(v => v.wid === id);
 const inPick = (key, id) => (G.picks[key] ? G.picks[key].ids.includes(id) : false);
 
@@ -284,7 +330,7 @@ async function openViewer(pid) {
   v.addEventListener('click', async e => {
     const b = e.target.closest('[data-v]'); if (!b) return;
     if (b.dataset.v === 'close') { v.remove(); if (url) URL.revokeObjectURL(url); route(); }
-    if (b.dataset.v === 'cover') { await setSt(p.wid, { cover: p.id }); toast('Cover photo set'); }
+    if (b.dataset.v === 'cover') { await setPhotoOrder(p.wid, [p.id, ...photosOf(p.wid).map(x => x.id).filter(x => x !== p.id)]); toast('Cover photo set'); }
     if (b.dataset.v === 'del') { if (await confirmSheet('Delete this photo?', 'It will be removed from this phone. This cannot be undone.')) { await DB.del('photos', p.id); await DB.del('fulls', p.id); S.photos = S.photos.filter(x => x.id !== p.id); if (st(p.wid).cover === p.id) await setSt(p.wid, { cover: null }); v.remove(); route(); } }
   });
   $('#capIn', v).addEventListener('change', async e => { p.caption = e.target.value; await DB.put('photos', p); toast('Caption saved'); });
@@ -320,6 +366,7 @@ function restoreUI() {
 function route() {
   if (curHash !== null && !keepScroll) { scrollMem[skey(curHash)] = scrollY; saveX(); }
   closeAllSheets();
+  if (arrangeFor && curHash !== 'w-' + arrangeFor) arrangeFor = null;
   if (mapInst) { mapInst.remove(); mapInst = null; }
   const h = decodeURIComponent(location.hash.slice(1)) || 'home';
   const tab = tabOf(h); curHash = h; tabMem[tab] = h;
@@ -507,7 +554,7 @@ function wIcons(w) {
   return `<span class="icons"><span class="${dogC}" title="Dogs: ${esc(w.dog || 'unknown')}">${svg('dog')}</span><span class="${foodC}" title="Food">${svg('fork')}</span>${w.picnic ? `<span class="ok" title="Picnic OK">${svg('basket')}</span>` : ''}${w.resLevel === 'required' ? `<span title="Reservation required" style="color:var(--claret)">${svg('cal')}</span>` : ''}${w.adults ? '<span class="mono small" title="Adults only">21+</span>' : ''}</span>`;
 }
 function wCard(w) {
-  const s = st(w.id); const sc = score(w.id); const ph = s.cover ? S.photos.find(p => p.id === s.cover) : photosOf(w.id)[0];
+  const s = st(w.id); const sc = score(w.id); const ph = photosOf(w.id)[0];
   const d = distFromBase(w);
   return `<a class="wcard" href="#w-${w.id}" style="--rc:${regionColor(w.region)}"><span class="band"></span>
     <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(regionName(w.region))} · ${Math.round(d)} mi${gR(w.id) ? ` · <span style="color:var(--gold)">★</span> ${gR(w.id)[0]}` : ''}</span>
@@ -552,7 +599,7 @@ async function renderWinery(id) {
   const w = W(id); if (!w) { view.innerHTML = '<div class="empty" style="margin-top:20px">That winery isn’t in the guide.</div>'; setTop('Not found', { back: true }); return; }
   const s = st(id); setTop(w.n, { back: true });
   const rc = regionColor(w.region); const sc = score(id);
-  const cover = s.cover ? S.photos.find(p => p.id === s.cover) : null;
+  const cover = photosOf(id)[0] || null;
   const coverURL = cover ? await fullURL(cover.id) : null;
   const sched = w.h ? schedule(w, new Date()) : null; const td = new Date().getDay();
   const order = [1, 2, 3, 4, 5, 6, 0];
@@ -574,6 +621,7 @@ async function renderWinery(id) {
     <div class="heroctl"><button data-act="addPhoto" data-id="${id}">${svg('image')}Photo</button><button data-act="camPhoto" data-id="${id}">${svg('camera')}Camera</button></div>
     <div class="inner"><div class="tier">${esc(regionName(w.region))}${w.tier ? ' · ' + esc(w.tier) : ''}</div><h2>${esc(w.n)}</h2><div class="town">${esc(w.town)}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', Virginia'}${w.aka ? ' · ' + esc(w.aka) : ''}</div></div>
   </div>
+  ${s.hidden ? `<div class="card row" style="margin-top:14px;justify-content:space-between;border-color:var(--claret)"><span class="small"><b>Removed from our guide.</b><br><span class="muted">Visits and photos are kept.</span></span><button class="btn primary" data-act="restoreW" data-id="${id}">Restore</button></div>` : ''}
   <div class="actions">
     <button class="btn vine ${isVisited(id) ? 'on' : ''}" data-act="status" data-id="${id}" data-s="visited">${svg('check')}${isVisited(id) ? 'Visited' : 'Mark visited'}</button>
     <button class="btn ${s.status === 'want' ? 'on' : ''}" data-act="status" data-id="${id}" data-s="want">${svg(s.status === 'want' ? 'heartf' : 'heart')}Want to go</button>
@@ -620,8 +668,9 @@ async function renderWinery(id) {
     </div></div>
   <div class="section"><div class="section-head"><h3>Our visits</h3><button class="linkbtn" data-act="logVisit" data-id="${id}">Log a visit</button></div>
     ${visits.length ? visits.map(visitCard).join('') : '<div class="empty">No visits logged yet. After you go, log the date, who came, your favorite pour, and photos.</div>'}</div>
-  <div class="section"><div class="section-head"><h3>Photos</h3><span class="row"><button class="linkbtn" data-act="camPhoto" data-id="${id}">Camera</button><span class="muted">·</span><button class="linkbtn" data-act="addPhoto" data-id="${id}">From gallery</button></span></div>
-    ${photos.length ? `<div class="photos">${photos.map(p => `<button data-act="viewPhoto" data-pid="${p.id}"><img src="${thumbURL(p)}" alt="${esc(p.caption)}" loading="lazy"></button>`).join('')}</div>` : '<div class="empty">Your photos from this winery will collect here.</div>'}</div>
+  <div class="section"><div class="section-head"><h3>Photos</h3><span class="row"><button class="linkbtn" data-act="camPhoto" data-id="${id}">Camera</button><span class="muted">·</span><button class="linkbtn" data-act="addPhoto" data-id="${id}">From gallery</button>${photos.length ? `<span class="muted">·</span><button class="linkbtn" data-act="arrange" data-id="${id}">${arrangeFor === id ? 'Done' : 'Arrange'}</button>` : ''}</span></div>
+    ${photos.length ? `<div class="photos${arrangeFor === id ? ' arranging' : ''}" id="ph-grid" data-id="${id}">${photos.map((p, i) => `<div class="ph" data-pid="${p.id}">${arrangeFor === id ? `<img src="${thumbURL(p)}" alt="" draggable="false">` : `<button data-act="viewPhoto" data-pid="${p.id}"><img src="${thumbURL(p)}" alt="${esc(p.caption)}" loading="lazy"></button>`}${i === 0 ? '<span class="cover">Cover</span>' : ''}${arrangeFor === id ? `<button class="phdel" data-act="delPhoto" data-pid="${p.id}" aria-label="Delete photo">${svg('x')}</button>` : ''}</div>`).join('')}</div>
+      ${arrangeFor === id ? '<span class="small muted">Drag photos to reorder. The first one is the cover. Tap × to delete.</span>' : ''}` : '<div class="empty">Your photos from this winery will collect here.</div>'}</div>
   <div class="section"><div class="section-head"><h3>Bottles we bought</h3><button class="linkbtn" data-act="addBottle" data-id="${id}">Add bottle</button></div>
     ${(s.bottles || []).length ? `<div class="card" style="padding:2px 14px"><ul class="plain">${s.bottles.map((b, i) => `<li class="row" style="justify-content:space-between;flex-wrap:nowrap"><span>${svg('bottle', 'width="16" height="16" style="vertical-align:-3px;color:var(--claret)"')} <b>${esc(b.wine)}</b>${b.vintage ? ' ' + esc(b.vintage) : ''} <span class="muted small">× ${esc(b.qty || 1)}${b.price ? ' · $' + esc(b.price) : ''}${b.date ? ' · ' + fmtDate(b.date) : ''}</span></span><button class="iconbtn" style="width:32px;height:32px" data-act="delBottle" data-id="${id}" data-i="${i}" aria-label="Remove">${svg('x')}</button></li>`).join('')}</ul></div>` : '<div class="empty">Track what came home with you, and when to open it.</div>'}</div>
   <div class="section"><h3>Public reviews</h3>
@@ -639,8 +688,11 @@ async function renderWinery(id) {
   <div class="section"><h3>Our notes</h3><textarea id="notes" data-notes="${id}" placeholder="Seating we liked, staff names, what to order next time…">${esc(s.notes || '')}</textarea></div>
   <div class="section"><h3>Fix the map pin</h3><div class="card stack"><span class="small muted">Standing at the tasting room? Pin it to your current GPS position for exact distances.</span>
     <div class="row"><button class="btn" data-act="pinHere" data-id="${id}">${svg('locate')}Pin to my location</button>${S.kv.coords[id] ? `<span class="small muted">Pin source: ${S.kv.coords[id][2] === 'gps' ? 'your GPS' : 'OpenStreetMap'}</span>` : ''}</div>
-    ${w.custom ? `<button class="btn" data-act="delCustom" data-id="${id}">${svg('trash')}Remove this winery</button>` : ''}</div></div>`;
+    </div></div>
+  <div class="section"><h3>Remove</h3><div class="card stack"><span class="small muted">${w.custom ? 'Delete this winery you added. Visits and photos stay in the journal.' : 'Not for us? Remove it from the guide, map, suggestions, and badges. Visits and photos stay in the journal, and you can restore it in Settings.'}</span>
+    <div>${w.custom ? `<button class="btn" data-act="delCustom" data-id="${id}">${svg('trash')}Delete this winery</button>` : s.hidden ? `<button class="btn" data-act="restoreW" data-id="${id}">Restore to our guide</button>` : `<button class="btn" data-act="hideW" data-id="${id}">${svg('trash')}Remove from our guide</button>`}</div></div></div>`;
   paintRidges(view);
+  if (arrangeFor === id) enableArrange($('#ph-grid'));
   loadWeather(w);
 }
 function menuSection(w) {
@@ -1057,8 +1109,9 @@ async function renderPrefs() {
     <div class="row"><button class="btn primary" data-act="export">${svg('download')}Save backup</button><button class="btn" data-act="import">${svg('upload')}Restore from file</button></div>
     <span class="small muted">${est ? `Using ${(est.usage / 1048576).toFixed(1)} MB` : ''}${persisted ? ' · protected from automatic cleanup' : ' · <button class="linkbtn" data-act="persist">Protect storage from cleanup</button>'}</span></div></div>
   <div class="section"><h3>Appearance</h3><div class="seg">${['system', 'light', 'dark'].map(k => `<button class="${s.theme === k ? 'on' : ''}" data-act="theme" data-k="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
-  <div class="section"><h3>Wineries</h3><div class="card stack"><span class="small muted">Found a new favorite? Add it and it gets the same journal, scorecard, and trip features.</span><div><button class="btn" data-act="addWinery">${svg('plus')}Add a winery</button></div></div></div>
-  <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors and CARTO. Google maps load from Google when online.</p>
+  <div class="section"><h3>Wineries</h3><div class="card stack"><span class="small muted">Found a new favorite? Add it and it gets the same journal, scorecard, and trip features.</span><div><button class="btn" data-act="addWinery">${svg('plus')}Add a winery</button></div>
+    ${(() => { const hid = EVERY().filter(w => st(w.id).hidden).sort((a, b) => a.n.localeCompare(b.n)); return hid.length ? `<h3 style="margin-top:8px">Removed from our guide · ${hid.length}</h3>${hid.map(w => `<div class="sugg"><a href="#w-${w.id}" style="color:var(--ink);text-decoration:none"><b>${esc(w.n)}</b><br><span class="small muted">${esc(w.town)}</span></a><button class="btn" data-act="restoreW" data-id="${w.id}">Restore</button></div>`).join('')}` : ''; })()}</div></div>
+  <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
@@ -1324,6 +1377,8 @@ const ACT = {
   camPhoto: el => pickPhotos(el.dataset.id, null, true),
   menuPhoto: el => pickPhotos(el.dataset.id, null, false, null, 'menu'),
   viewPhoto: el => openViewer(el.dataset.pid),
+  arrange: async el => { const id = el.dataset.id; arrangeFor = arrangeFor === id ? null : id; const y = scrollY; keepScroll = true; await renderWinery(id); keepScroll = false; window.scrollTo(0, y); },
+  delPhoto: async el => { if (!(await confirmSheet('Delete this photo?', 'It will be removed from this phone' + (Sync.live() ? ' and the family journal' : '') + '. This cannot be undone.'))) return; const y = scrollY; await deletePhoto(el.dataset.pid); keepScroll = true; await renderWinery(curHash.slice(2)); keepScroll = false; window.scrollTo(0, y); toast('Photo deleted'); },
   wineStar: async el => { const { id, n } = el.dataset; const cur = ((st(id).wines || {})[n] || {}).s; const v = +el.dataset.v === cur ? 0 : +el.dataset.v; await saveWine(id, n, { s: v, t: true }); const row = el.closest('.wine'); row.outerHTML = wineRow(id, n); },
   wineNote: el => wineSheet(el.dataset.id, el.dataset.n),
   addWine: async el => { const id = el.dataset.id; const n = $('#newWine').value.trim(); if (!n) return; const s = st(id); if ((W(id).wines || []).concat(s.extraWines || []).includes(n)) { toast('Already listed'); return; } await setSt(id, { extraWines: (s.extraWines || []).concat(n) }); await saveWine(id, n, { t: true }); renderWinery(id); },
@@ -1334,6 +1389,8 @@ const ACT = {
   editCustom: el => customSheet(el.dataset.id),
   delCustom: async el => { if (await confirmSheet('Remove this winery?', 'Its page is removed. Visits and photos stay in the journal.')) { await DB.del('custom', el.dataset.id); S.custom = S.custom.filter(x => x.id !== el.dataset.id); go('wineries'); } },
   addWinery: () => customSheet(),
+  hideW: async el => { const w = W(el.dataset.id); if (!(await confirmSheet(`Remove ${w.n}?`, 'It leaves the guide, map, suggestions, and badge counts. Visits and photos stay in the journal. You can restore it anytime in Settings.', 'Remove'))) return; await setSt(w.id, { hidden: true }); tagCache.delete(w.id); toast('Removed — restore it in Settings'); go('wineries'); checkBadges(); },
+  restoreW: async el => { await setSt(el.dataset.id, { hidden: false }); toast('Restored to our guide'); route(); checkBadges(); },
   mapMode: el => { MF.mode = el.dataset.m; renderMap(); },
   mapF: el => { const f = el.dataset.f; MF.on.has(f) ? MF.on.delete(f) : MF.on.add(f); if (f === 'visited') MF.on.delete('unvisited'); if (f === 'unvisited') MF.on.delete('visited'); renderMap(); },
   closePeek: () => { $('#peek').hidden = true; MF.peek = null; saveUI(); },
