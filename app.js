@@ -807,7 +807,7 @@ function tripSheet(tid) {
 const stopQ = w => { const c = S.kv.coords[w.id]; return c && c[2] === 'gps' ? `${c[0]},${c[1]}` : placeQ(w); };
 function renderTrip(tid) {
   const t = S.trips.find(x => x.id === tid); if (!t) { go('plan'); return; }
-  setTop(t.name, { back: true, actions: `<button class="iconbtn" data-act="editTrip" data-tid="${tid}" aria-label="Edit trip">${svg('edit')}</button>` });
+  setTop(t.name, { back: true, actions: `<button class="iconbtn" data-act="shareTrip" data-tid="${tid}" aria-label="Share trip">${svg('share')}</button><button class="iconbtn" data-act="editTrip" data-tid="${tid}" aria-label="Edit trip">${svg('edit')}</button>` });
   const bp = [t.base.lat, t.base.lng]; const used = new Set(Object.values(t.days).flat());
   const days = Object.keys(t.days).sort().map(d => {
     const dt = fromISO(d); const stops = t.days[d].map(W).filter(Boolean); const hol = holiday(dt);
@@ -829,13 +829,43 @@ function renderTrip(tid) {
     const embed = stops.length ? `https://maps.google.com/maps?saddr=${enc(baseQ)}&daddr=${stopsQ.map(enc).join('+to:')}+to:${enc(baseQ)}&output=embed` : '';
     return `<div class="section day"><div class="dayhead"><b>${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}</b>${hol ? `<span class="chip warn">${svg('warn')}${hol} · confirm hours</span>` : ''}</div>
       <div class="card">${stops.length ? `<div class="small muted">From ${esc(t.base.name)}</div>${rows}<div class="leg">↓ ${Math.round(back)} mi back · day total ~${Math.round(total)} mi, ${fmtDrive(driveMin(total))} driving</div>` : '<div class="small muted">No stops yet.</div>'}
-        <div class="row" style="margin-top:12px"><button class="btn" data-act="addStop" data-tid="${tid}" data-d="${d}">${svg('plus')}Add stop</button>${stops.length ? `<a class="btn primary" href="${navDay}" target="_blank" rel="noopener">${svg('nav')}Navigate day</a><button class="btn" data-act="showRoute" data-src="${esc(embed)}">${svg('route')}Route map</button>` : ''}</div>
+        <div class="row" style="margin-top:12px"><button class="btn" data-act="addStop" data-tid="${tid}" data-d="${d}">${svg('plus')}Add stop</button>${stops.length ? `<a class="btn primary" href="${navDay}" target="_blank" rel="noopener">${svg('nav')}Navigate day</a><button class="btn" data-act="showRoute" data-src="${esc(embed)}">${svg('route')}Route map</button><button class="btn" data-act="shareTrip" data-tid="${tid}" data-d="${d}">${svg('share')}Share day</button>` : ''}</div>
         <div class="routebox"></div>
         ${openList.length ? `<div style="margin-top:12px"><h3 style="margin-bottom:4px">Open this day nearby</h3>${openList.map(({ w }) => `<div class="sugg"><span><a href="#w-${w.id}" style="color:var(--ink);font-weight:600;text-decoration:none">${esc(w.n)}</a><br><span class="small muted">${fmtRange(hoursOn(w, dt))} · ${Math.round(roadMi(bp, pos(w)))} mi${st(w.id).status === 'want' ? ' · on our list' : ''}${isVisited(w.id) ? ' · visited' : ''}</span></span><button class="btn" data-act="quickAdd" data-tid="${tid}" data-d="${d}" data-id="${w.id}">${svg('plus')}Add</button></div>`).join('')}</div>` : ''}
       </div></div>`;
   }).join('');
   view.innerHTML = `<div class="section" style="margin-top:8px"><div class="small muted">${fmtDate(t.start, true)} – ${fmtDate(t.end, true)}</div><div class="row"><span class="chip ridge">${svg('pin')}Base: ${esc(t.base.name)}</span></div>${t.notes ? `<p class="prose" style="margin:0">${esc(t.notes)}</p>` : ''}</div>${days}
+    <div class="section"><button class="btn primary block" data-act="shareTrip" data-tid="${tid}">${svg('share')}Share this trip</button></div>
     <p class="small muted" style="margin-top:22px">Drive times are straight-line estimates. Tap “Navigate day” for real routes in Google Maps.</p>`;
+}
+function tripText(t, onlyDay) {
+  const baseQ = `${t.base.lat},${t.base.lng}`; const out = [];
+  out.push(onlyDay ? `${t.name} · ${fmtDate(onlyDay, true)}` : t.name);
+  if (!onlyDay) out.push(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)}`);
+  out.push(`Staying in ${t.base.name}`);
+  if (t.notes && !onlyDay) out.push(t.notes);
+  Object.keys(t.days).sort().filter(d => !onlyDay || d === onlyDay).forEach(d => {
+    const dt = fromISO(d); const stops = t.days[d].map(W).filter(Boolean); if (!stops.length && !onlyDay) return;
+    out.push(''); if (!onlyDay) out.push(`${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}${holiday(dt) ? ' (' + holiday(dt) + ')' : ''}`);
+    if (!stops.length) { out.push('No stops planned yet.'); return; }
+    let prev = [t.base.lat, t.base.lng];
+    stops.forEach((w, i) => {
+      const hrs = hoursOn(w, dt); const mi = roadMi(prev, pos(w)); prev = pos(w);
+      out.push(`${i + 1}. ${w.n} (${w.town}) · ${hrs ? (hrs.length ? fmtRange(hrs) : 'closed that day') : 'check hours'} · ~${fmtDrive(driveMin(mi))} drive`);
+      out.push(`   https://www.google.com/maps/search/?api=1&query=${enc(placeQ(w))}`);
+    });
+    out.push(`Full route: https://www.google.com/maps/dir/?api=1&origin=${enc(baseQ)}&destination=${enc(baseQ)}&waypoints=${stops.map(stopQ).map(enc).join('%7C')}&travelmode=driving`);
+  });
+  if (!Object.values(t.days).some(a => a.length)) out.push('', 'No stops planned yet.');
+  out.push('', 'Hours are published schedules; confirm before you go.');
+  return out.join('\n');
+}
+async function shareTrip(tid, day) {
+  const t = S.trips.find(x => x.id === tid); if (!t) return; const text = tripText(t, day || null);
+  const title = day ? `${t.name} · ${fmtDate(day)}` : t.name;
+  if (navigator.share) { try { await navigator.share({ title, text }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(text); toast('Itinerary copied — paste it anywhere'); }
+  catch (e) { openSheet(`<h2>Share ${esc(title)}</h2><p class="small muted" style="margin:-6px 0 10px">Copy the text below.</p><textarea style="min-height:320px" readonly>${esc(text)}</textarea><div class="foot"><button class="btn primary" onclick="closeSheet()">Done</button></div>`); }
 }
 function stopSheet(tid, d) {
   const t = S.trips.find(x => x.id === tid); const dt = fromISO(d); const bp = [t.base.lat, t.base.lng];
@@ -968,6 +998,7 @@ const ACT = {
   jtab: el => { jTab = el.dataset.k; renderJournal(); },
   newTrip: () => tripSheet(),
   editTrip: el => tripSheet(el.dataset.tid),
+  shareTrip: el => shareTrip(el.dataset.tid, el.dataset.d),
   addStop: el => stopSheet(el.dataset.tid, el.dataset.d),
   quickAdd: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].push(el.dataset.id); await DB.put('trips', t); renderTrip(t.id); },
   rmStop: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].splice(+el.dataset.i, 1); await DB.put('trips', t); renderTrip(t.id); },
