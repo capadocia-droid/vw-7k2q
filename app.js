@@ -48,6 +48,8 @@ const P = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/>',
   mountain: '<path d="M3 20l6-10 4 6 3-4 5 8z"/>',
+  cloud: '<path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.3 4.4 4.4 0 0 0 7 18z"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/>',
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
@@ -82,15 +84,22 @@ const DB = {
     });
   },
   get(s, k) { return this.req(s, 'readonly', o => o.get(k)); },
-  put(s, v, k) { return this.req(s, 'readwrite', o => (k === undefined ? o.put(v) : o.put(v, k))); },
-  del(s, k) { return this.req(s, 'readwrite', o => o.delete(k)); },
+  putRaw(s, v, k) { return this.req(s, 'readwrite', o => (k === undefined ? o.put(v) : o.put(v, k))); },
+  delRaw(s, k) { return this.req(s, 'readwrite', o => o.delete(k)); },
+  // synced stores get a last-write timestamp (_u), last editor (_by) and creator (_cb), then go to the family journal
+  put(s, v, k, opts = {}) {
+    const synced = SYNCED.includes(s) && v && typeof v === 'object';
+    if (synced) { v._u = opts.seed ? 1 : Date.now(); if (!opts.seed) { v._by = Sync.me(); if (!v._cb) v._cb = Sync.me(); } }
+    return this.putRaw(s, v, k).then(r => { if (synced && !opts.seed) Sync.local(s, k !== undefined ? k : v.id, v); return r; });
+  },
+  del(s, k) { return this.delRaw(s, k).then(r => { if (SYNCED.includes(s)) Sync.localDel(s, k); return r; }); },
   all(s) { return this.req(s, 'readonly', o => o.getAll()); },
   keys(s) { return this.req(s, 'readonly', o => o.getAllKeys()); },
   clear(s) { return this.req(s, 'readwrite', o => o.clear()); }
 };
 
 const S = { state: {}, visits: [], photos: [], trips: [], custom: [], kv: {} };
-const KV_KEYS = ['settings', 'coords', 'seeded', 'refine'];
+const KV_KEYS = ['settings', 'coords', 'seeded', 'refine', 'badges', 'stampSeen'];
 
 async function loadAll() {
   await DB.open();
@@ -103,6 +112,9 @@ async function loadAll() {
   S.kv.coords = S.kv.coords || {};
   S.kv.refine = S.kv.refine || {};
   if (!S.kv.seeded) await seed();
+  // records saved before family sync existed get _u = 2: newer than untouched seeds (1), older than any real edit
+  for (const [k, v] of Object.entries(S.state)) if (v && v._u == null) { v._u = 2; await DB.putRaw('state', v, k); }
+  for (const [st, arr] of [['visits', S.visits], ['photos', S.photos], ['trips', S.trips], ['custom', S.custom]]) for (const v of arr) if (v._u == null) { v._u = 2; await DB.putRaw(st, v); }
 }
 const saveKV = k => DB.put('kv', S.kv[k], k);
 
@@ -110,15 +122,15 @@ async function seed() {
   for (const w of G.wineries) {
     if (w.visited) {
       S.state[w.id] = { status: 'visited', fav: true, notes: w.mine || '' };
-      await DB.put('state', S.state[w.id], w.id);
+      await DB.put('state', S.state[w.id], w.id, { seed: true });
     }
   }
   const tf = G.wineries.find(w => w.id === 'three-fox');
-  const v = { id: uid('v'), wid: tf.id, date: tf.visitDate, who: '', fav: 'Wood-fired pizza with a Cabernet Franc', notes: tf.mine, seeded: true };
-  S.visits.push(v); await DB.put('visits', v);
+  const v = { id: 'v-seed-three-fox', wid: tf.id, date: tf.visitDate, who: '', fav: 'Wood-fired pizza with a Cabernet Franc', notes: tf.mine, seeded: true };
+  S.visits.push(v); await DB.put('visits', v, undefined, { seed: true });
   const days = {}; ['2026-12-29', '2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02'].forEach(d => (days[d] = []));
   const t = { id: 't-flint-hill', name: 'Flint Hill New Year', start: '2026-12-29', end: '2027-01-02', base: { ...G.defaultBase }, days, notes: 'Winter getaway with Bravo. Confirm holiday hours on Dec 31 and Jan 1.' };
-  S.trips.push(t); await DB.put('trips', t);
+  S.trips.push(t); await DB.put('trips', t, undefined, { seed: true });
   S.kv.seeded = true; await saveKV('seeded');
 }
 
@@ -232,7 +244,7 @@ function drawRidges(cv, color, seedStr) {
 /* ---------------- photos ---------------- */
 const urlCache = new Map();
 function thumbURL(p) { if (!urlCache.has(p.id)) urlCache.set(p.id, URL.createObjectURL(p.thumb)); return urlCache.get(p.id); }
-async function fullURL(id) { const b = await DB.get('fulls', id); return b ? URL.createObjectURL(b) : null; }
+async function fullURL(id) { let b = await DB.get('fulls', id); if (!b) b = await Sync.fetchFull(id); return b ? URL.createObjectURL(b) : null; }
 function canvasBlob(img, max, q) {
   const w = img.width || img.naturalWidth, h = img.height || img.naturalHeight; const s = Math.min(1, max / Math.max(w, h));
   const c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
@@ -267,7 +279,7 @@ async function openViewer(pid) {
   const v = document.createElement('div'); v.className = 'viewer';
   v.innerHTML = `<div class="vbar"><button data-v="close">Close</button><span class="row"><button data-v="cover">Set as cover</button><button data-v="del">Delete</button></span></div>
     <img src="${url || thumbURL(p)}" alt="${esc(p.caption || (w ? w.n : 'Photo'))}">
-    <div class="cap"><input type="text" id="capIn" placeholder="Add a caption" value="${esc(p.caption)}" style="background:rgba(255,255,255,.1);color:#fff;border-color:transparent"><div class="small" style="margin-top:6px;opacity:.7">${w ? esc(w.n) + ' · ' : ''}${new Date(p.date).toLocaleDateString()}</div></div>`;
+    <div class="cap"><input type="text" id="capIn" placeholder="Add a caption" value="${esc(p.caption)}" style="background:rgba(255,255,255,.1);color:#fff;border-color:transparent"><div class="small" style="margin-top:6px;opacity:.7">${w ? esc(w.n) + ' · ' : ''}${new Date(p.date).toLocaleDateString()}${Sync.enabled && p._cb ? ' · added by ' + esc(p._cb) : ''}</div></div>`;
   document.body.appendChild(v);
   v.addEventListener('click', async e => {
     const b = e.target.closest('[data-v]'); if (!b) return;
@@ -291,7 +303,7 @@ function route() {
   view.classList.toggle('full', h === 'map');
   if (h.startsWith('w-')) return renderWinery(h.slice(2));
   if (h.startsWith('trip-')) return renderTrip(h.slice(5));
-  ({ home: renderHome, wineries: renderList, map: renderMap, journal: renderJournal, plan: renderPlan, prefs: renderPrefs }[h] || renderHome)();
+  return ({ home: renderHome, wineries: renderList, map: renderMap, journal: renderJournal, plan: renderPlan, prefs: renderPrefs }[h] || renderHome)();
 }
 function go(h) { if (location.hash === '#' + h) route(); else location.hash = h; }
 window.addEventListener('scroll', () => $('#topbar').classList.toggle('scrolled', scrollY > 4), { passive: true });
@@ -301,7 +313,7 @@ $('#backBtn').addEventListener('click', () => { if (history.length > 1) history.
 let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if ((location.hash || '#home') === '#home') renderHome(); });
 function renderHome() {
-  setTop('VA Wine Passport', { logo: true, actions: `<button class="iconbtn" data-act="go" data-to="prefs" aria-label="Settings">${svg('gear')}</button>` });
+  setTop('VA Wine Passport', { logo: true, actions: `${Sync.enabled ? `<span id="syncBadge">${syncBadge()}</span>` : ''}<button class="iconbtn" data-act="go" data-to="prefs" aria-label="Settings">${svg('gear')}</button>` });
   const all = ALL(); const visited = all.filter(w => isVisited(w.id)).length;
   const winesRated = Object.values(S.state).reduce((n, s) => n + Object.values(s.wines || {}).filter(x => x.s).length, 0);
   const bottles = Object.values(S.state).reduce((n, s) => n + (s.bottles || []).reduce((m, b) => m + (+b.qty || 1), 0), 0);
@@ -498,7 +510,7 @@ let wxCache = {};
 async function renderWinery(id) {
   const w = W(id); if (!w) { view.innerHTML = '<div class="empty" style="margin-top:20px">That winery isn’t in the guide.</div>'; setTop('Not found', { back: true }); return; }
   const s = st(id); setTop(w.n, { back: true });
-  window.scrollTo(0, 0);
+  if (!keepScroll) window.scrollTo(0, 0);
   const rc = regionColor(w.region); const sc = score(id);
   const cover = s.cover ? S.photos.find(p => p.id === s.cover) : null;
   const coverURL = cover ? await fullURL(cover.id) : null;
@@ -520,7 +532,7 @@ async function renderWinery(id) {
   <div class="hero" style="--rc:${rc}">
     ${coverURL ? `<img src="${coverURL}" alt="">` : `<canvas data-ridge="${esc(id)}" data-color="${rc}"></canvas>`}<div class="shade"></div>
     <div class="heroctl"><button data-act="addPhoto" data-id="${id}">${svg('image')}Photo</button><button data-act="camPhoto" data-id="${id}">${svg('camera')}Camera</button></div>
-    <div class="inner"><div class="tier">${esc(regionName(w.region))}${w.tier ? ' · ' + esc(w.tier) : ''}</div><h2>${esc(w.n)}</h2><div class="town">${esc(w.town)}, Virginia${w.aka ? ' · ' + esc(w.aka) : ''}</div></div>
+    <div class="inner"><div class="tier">${esc(regionName(w.region))}${w.tier ? ' · ' + esc(w.tier) : ''}</div><h2>${esc(w.n)}</h2><div class="town">${esc(w.town)}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', Virginia'}${w.aka ? ' · ' + esc(w.aka) : ''}</div></div>
   </div>
   <div class="actions">
     <button class="btn vine ${isVisited(id) ? 'on' : ''}" data-act="status" data-id="${id}" data-s="visited">${svg('check')}${isVisited(id) ? 'Visited' : 'Mark visited'}</button>
@@ -616,7 +628,7 @@ function visitCard(v) {
   return `<div class="card visit"><div class="date">${d ? `<b>${d.getDate()}</b><span>${MONTHS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}</span>` : '<b>?</b><span>date</span>'}</div>
     <div class="vbody"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><a href="#w-${v.wid}" style="font:17px var(--f-display);text-decoration:none;color:var(--ink)">${esc(w ? w.n : 'Winery')}</a>
       <button class="iconbtn" style="width:32px;height:32px" data-act="editVisit" data-vid="${v.id}" aria-label="Edit visit">${svg('edit')}</button></div>
-      ${v.who ? `<span class="small muted">With ${esc(v.who)}</span>` : ''}
+      ${v.who || (Sync.enabled && v._cb) ? `<span class="small muted">${v.who ? 'With ' + esc(v.who) : ''}${v.who && Sync.enabled && v._cb ? ' · ' : ''}${Sync.enabled && v._cb ? 'Logged by ' + esc(v._cb) : ''}</span>` : ''}
       ${v.fav ? `<span class="small"><b style="color:var(--claret)">Favorite pour:</b> ${esc(v.fav)}</span>` : ''}
       ${v.notes ? `<p>${esc(v.notes)}</p>` : ''}
       ${ph.length ? `<div class="strip">${ph.map(p => `<img src="${thumbURL(p)}" alt="" data-act="viewPhoto" data-pid="${p.id}">`).join('')}</div>` : ''}</div></div>`;
@@ -658,7 +670,7 @@ function visitSheet(wid, vid) {
     await DB.put('visits', rec); S.visits = S.visits.filter(x => x.id !== rec.id).concat(rec);
     if (st(w.id).status !== 'visited') await setSt(w.id, { status: 'visited' });
     if (pending.length) { toast('Saving photos…'); await addPhotos(pending, w.id, rec.id); }
-    toast('Visit saved'); route();
+    toast('Visit saved'); route(); checkBadges();
   });
 }
 function wineSheet(id, n) {
@@ -757,9 +769,7 @@ function renderJournal() {
     const loose = S.photos.filter(p => !p.visitId).sort((a, b) => b.date - a.date);
     if (loose.length) body += `<div class="section"><h3>Other photos</h3><div class="photos">${loose.map(p => `<button data-act="viewPhoto" data-pid="${p.id}"><img src="${thumbURL(p)}" alt="" loading="lazy"></button>`).join('')}</div></div>`;
   } else if (jTab === 'passport') {
-    const all = ALL(); const got = all.filter(w => isVisited(w.id));
-    body = `<div class="section"><p class="muted small" style="margin:0">${got.length} of ${all.length} stamps collected. Each visited winery gets its stamp.</p>
-      <div class="passport">${all.map(w => { const first = visitsOf(w.id).slice(-1)[0]; const ok = isVisited(w.id); return `<a href="#w-${w.id}" class="stamp ${ok ? 'got' : ''}" style="--rc:${regionColor(w.region)};--rot:${(hash(w.id) % 24) - 12}deg"><b>${esc(w.n.replace(/ (Vineyards?|Winery|Cellars|Estate Winery|Farm & Vineyards?|Vineyard & Winery|Vineyards & Winery|Wine)\b.*$/, ''))}</b>${ok ? `<span class="d">${first && first.date ? fmtDate(first.date).replace(/^(\w+) (\d+), (\d+)$/, '$1 $3') : 'Visited'}</span>` : `<span class="d">${esc(w.town)}</span>`}</a>`; }).join('')}</div></div>`;
+    body = renderPassport();
   } else if (jTab === 'rank') {
     const scored = ALL().map(w => ({ w, sc: score(w.id) })).filter(x => x.sc != null).sort((a, b) => b.sc - a.sc);
     const wines = []; Object.entries(S.state).forEach(([id, s]) => Object.entries(s.wines || {}).forEach(([n, x]) => { if (x.s) wines.push({ id, n, ...x }); }));
@@ -774,6 +784,111 @@ function renderJournal() {
       <div class="section">${rows.length ? `<div class="card" style="padding:2px 14px"><ul class="plain">${rows.map(b => `<li><b>${esc(b.wine)}</b>${b.vintage ? ' ' + esc(b.vintage) : ''} <span class="muted small">× ${esc(b.qty || 1)}</span><div class="small muted"><a href="#w-${b.id}">${esc(W(b.id)?.n || '')}</a>${b.date ? ' · ' + fmtDate(b.date) : ''}${b.price ? ' · $' + esc(b.price) : ''}</div></li>`).join('')}</ul></div>` : '<div class="empty">Add bottles from a winery page.</div>'}</div>`;
   }
   view.innerHTML = `<div class="seg" style="margin-top:8px">${tabs.map(([k, l]) => `<button class="${jTab === k ? 'on' : ''}" data-act="jtab" data-k="${k}">${l}</button>`).join('')}</div>${body}`;
+}
+
+/* ---------------- passport stamps & region badges ---------------- */
+const BADGES = {
+  shen:   { name: 'Gateway Keeper', blurb: 'Every Shenandoah Gateway & Fauquier winery stamped' },
+  loud:   { name: 'Loudoun Explorer', blurb: 'Every Loudoun Valley winery stamped' },
+  hunt:   { name: 'Hunt Country Rider', blurb: 'Every Middleburg & Hunt Country winery stamped' },
+  r231:   { name: 'Route 231 Rambler', blurb: 'Every Madison, Culpeper & Route 231 winery stamped' },
+  cville: { name: 'Monticello Master', blurb: 'Every Charlottesville & Monticello winery stamped' },
+  valley: { name: 'Valley Voyager', blurb: 'Every Shenandoah Valley winery stamped' },
+  ridge:  { name: 'Parkway Summiteer', blurb: 'Every Blue Ridge Parkway & Amherst winery stamped' },
+  md:     { name: 'Sugarloaf Sojourner', blurb: 'Our Maryland outpost stamped' },
+  all:    { name: 'Grand Cru Passport', blurb: 'Every winery in the guide stamped' }
+};
+const shortName = n => n.replace(/ (Vineyards?|Winery|Cellars|Estate Winery|Farm & Vineyards?|Vineyard & Winery|Vineyards & Winery|Family Wine|Wines)\b.*$/, '').replace(/^The Winery at /, '');
+function badgeProgress() {
+  const all = ALL(); const out = {};
+  for (const r of Object.keys(G.regions)) { const ws = all.filter(w => w.region === r); if (!ws.length) continue; out[r] = { got: ws.filter(w => isVisited(w.id)).length, total: ws.length, color: regionColor(r), label: G.regions[r].short }; }
+  out.all = { got: all.filter(w => isVisited(w.id)).length, total: all.length, color: 'var(--gold)', label: 'All Virginia' };
+  Object.values(out).forEach(b => (b.earned = b.got >= b.total));
+  return out;
+}
+function firstStampDate(id) { const v = visitsOf(id).filter(x => x.date).slice(-1)[0]; return v ? v.date : null; }
+const INK_DEFS = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>${[1, 2, 3].map(i => `
+  <filter id="ink${i}" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="${0.07 + i * 0.02}" numOctaves="4" seed="${i * 7}" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -6 4.1" result="speckle"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="${i * 3}" result="w"/>
+    <feDisplacementMap in="SourceGraphic" in2="w" scale="2.6" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+    <feComposite in="rough" in2="speckle" operator="in"/>
+  </filter>`).join('')}</defs></svg>`;
+function stampSVG(w) {
+  const id = w.id.replace(/[^a-z0-9]/gi, ''); const h = hash(w.id); const nm = shortName(w.n).toUpperCase();
+  const fs = Math.max(11, Math.min(19, 250 / Math.max(6, nm.length)));
+  const d = firstStampDate(w.id); const band = d ? (() => { const x = fromISO(d); return `${String(x.getDate()).padStart(2, '0')} ${MONTHS[x.getMonth()].toUpperCase()} ${x.getFullYear()}`; })() : 'VISITED';
+  const bottom = `${w.town.toUpperCase()} · ${(G.regions[w.region] || {}).short ? G.regions[w.region].short.toUpperCase() : 'VIRGINIA'}`;
+  const fsB = Math.max(9, Math.min(12.5, 200 / Math.max(10, bottom.length)));
+  return `<svg viewBox="0 0 200 200" class="stampsvg" role="img" aria-label="${esc(w.n)} stamp${d ? ', ' + band : ''}">
+    <defs><path id="t${id}" d="M 27,100 A 73,73 0 0 1 173,100"/><path id="b${id}" d="M 33,100 A 67,67 0 0 0 167,100"/></defs>
+    <g filter="url(#ink${(h % 3) + 1})" fill="none" stroke="currentColor">
+      <circle cx="100" cy="100" r="94" stroke-width="6"/><circle cx="100" cy="100" r="86" stroke-width="1.6"/><circle cx="100" cy="100" r="56" stroke-width="2"/>
+      <g fill="currentColor" stroke="none">
+        <text font-family="Young Serif, Georgia, serif" font-size="${fs}" letter-spacing="1.5"><textPath href="#t${id}" startOffset="50%" text-anchor="middle">${esc(nm)}</textPath></text>
+        <text font-family="IBM Plex Mono, monospace" font-size="${fsB}" font-weight="500" letter-spacing="1.2"><textPath href="#b${id}" startOffset="50%" text-anchor="middle">${esc(bottom)}</textPath></text>
+        <circle cx="31" cy="100" r="3"/><circle cx="169" cy="100" r="3"/>
+        <path d="M91 62h18l-1.3 11.5a7.7 7.7 0 0 1-15.4 0z"/><rect x="99" y="80" width="2.2" height="9"/><rect x="93.5" y="88.5" width="13" height="2.4" rx="1.2"/>
+        <rect x="40" y="94" width="120" height="22" rx="2"/>
+        <text x="100" y="110" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="${band === 'VISITED' ? 14 : 13}" font-weight="700" letter-spacing="1.5" fill="var(--stamp-paper)">${band}</text>
+        <path d="M78 132l6-10 4 6 3-4 6 8z M103 132l6-10 4 6 3-4 6 8z" opacity=".9"/>
+      </g>
+    </g></svg>`;
+}
+function sealPoints(n, R, r, cx = 60, cy = 60) { const pts = []; for (let i = 0; i < n * 2; i++) { const a = (Math.PI * i) / n - Math.PI / 2; const rad = i % 2 ? r : R; pts.push(`${(cx + rad * Math.cos(a)).toFixed(1)},${(cy + rad * Math.sin(a)).toFixed(1)}`); } return pts.join(' '); }
+function badgeSVG(key, b, big) {
+  const info = BADGES[key] || { name: b.label }; const id = 'bd' + key + (big ? 'L' : '');
+  if (!b.earned) {
+    const frac = b.got / b.total; const C = 2 * Math.PI * 46;
+    return `<svg viewBox="0 0 120 120" class="badgesvg locked" role="img" aria-label="${esc(info.name)}: ${b.got} of ${b.total}">
+      <circle cx="60" cy="60" r="46" fill="var(--sunk)" stroke="var(--line)" stroke-width="7"/>
+      <circle cx="60" cy="60" r="46" fill="none" stroke="${b.color}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>
+      <text x="60" y="58" text-anchor="middle" font-family="Young Serif, Georgia, serif" font-size="22" fill="var(--ink)">${b.got}/${b.total}</text>
+      <text x="60" y="76" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--muted)" letter-spacing="1">${esc(b.label.toUpperCase())}</text></svg>`;
+  }
+  return `<svg viewBox="0 0 120 120" class="badgesvg" role="img" aria-label="Badge earned: ${esc(info.name)}">
+    <defs><path id="${id}" d="M 33,62 A 27,27 0 0 1 87,62"/></defs>
+    <polygon points="${sealPoints(16, 58, 51)}" fill="${b.color}"/>
+    <circle cx="60" cy="60" r="44" fill="none" stroke="var(--stamp-paper)" stroke-width="1.5" stroke-dasharray="2 3"/>
+    <circle cx="60" cy="60" r="38" fill="var(--stamp-paper)"/>
+    <text font-family="IBM Plex Mono, monospace" font-size="8.5" font-weight="700" letter-spacing="1.3" fill="${b.color}"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(b.label.toUpperCase())}</textPath></text>
+    <path d="M53 52h14l-1 8.5a6 6 0 0 1-12 0z M59 66h2v6h-2z M55 71.5h10v2H55z" fill="${b.color}"/>
+    <text x="60" y="88" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" font-weight="700" fill="${b.color}" letter-spacing="1">${b.total}/${b.total} ★</text></svg>`;
+}
+function renderPassport() {
+  const all = ALL(); const prog = badgeProgress(); const got = all.filter(w => isVisited(w.id));
+  const seen = new Set(S.kv.stampSeen || []); const fresh = new Set(got.map(w => w.id).filter(id => !seen.has(id) && S.kv.stampSeen));
+  const earnedN = Object.entries(prog).filter(([, b]) => b.earned).length;
+  const order = Object.keys(G.regions).filter(r => prog[r]);
+  const html = `${INK_DEFS}
+    <div class="section"><div class="section-head"><h3>Badges</h3><span class="small muted">${earnedN} of ${Object.keys(prog).length} earned</span></div>
+      <div class="badges">${['all', ...order].map(k => `<button class="badge ${prog[k].earned ? 'earned' : ''}" data-act="badgeInfo" data-k="${k}">${badgeSVG(k, prog[k])}<span>${esc((BADGES[k] || {}).name || prog[k].label)}</span></button>`).join('')}</div></div>
+    <p class="muted small" style="margin:18px 0 0">${got.length} of ${all.length} stamps collected. Stamp every winery in an area to earn its badge.</p>
+    ${order.map(r => { const ws = all.filter(w => w.region === r).sort((a, b) => (isVisited(b.id) - isVisited(a.id)) || shortName(a.n).localeCompare(shortName(b.n))); return `
+      <div class="section"><div class="section-head"><h3 style="color:${prog[r].color}">${esc(G.regions[r].name)}</h3><span class="small mono ${prog[r].earned ? '' : 'muted'}" style="${prog[r].earned ? 'color:' + prog[r].color + ';font-weight:600' : ''}">${prog[r].got}/${prog[r].total}${prog[r].earned ? ' ★' : ''}</span></div>
+        <div class="passport">${ws.map(w => isVisited(w.id)
+          ? `<a href="#w-${w.id}" class="stamp got${fresh.has(w.id) ? ' fresh' : ''}" style="--rc:${regionColor(w.region)};--rot:${(hash(w.id) % 28) - 14}deg;--dx:${(hash(w.id + 'x') % 7) - 3}px;--dy:${(hash(w.id + 'y') % 7) - 3}px">${stampSVG(w)}</a>`
+          : `<a href="#w-${w.id}" class="stamp"><b>${esc(shortName(w.n))}</b><span class="d">${esc(w.town)}</span></a>`).join('')}</div></div>`; }).join('')}`;
+  S.kv.stampSeen = got.map(w => w.id); saveKV('stampSeen');
+  return html;
+}
+async function checkBadges() {
+  const prog = badgeProgress(); const now = Object.keys(prog).filter(k => prog[k].earned);
+  if (!S.kv.badges) { S.kv.badges = now; await saveKV('badges'); return; }
+  const fresh = now.filter(k => !S.kv.badges.includes(k));
+  S.kv.badges = now; await saveKV('badges');
+  if (fresh.length) setTimeout(() => { $$('.toast').forEach(t => t.remove()); badgeSheet(fresh[0], prog, true); }, 450);
+}
+function badgeSheet(k, prog = badgeProgress(), celebrate) {
+  const b = prog[k]; const info = BADGES[k] || { name: b.label, blurb: '' };
+  const ws = (k === 'all' ? ALL() : ALL().filter(w => w.region === k));
+  const left = ws.filter(w => !isVisited(w.id));
+  openSheet(`<div class="badgesheet${celebrate ? ' celebrate' : ''}">${badgeSVG(k, b, true)}
+    ${celebrate ? '<div class="eyebrow">Badge earned</div>' : ''}<h2>${esc(info.name)}</h2>
+    <p class="muted" style="margin:0">${b.earned ? esc(info.blurb) + '.' : `${b.got} of ${b.total} stamped. ${left.length} to go:`}</p>
+    ${!b.earned ? `<div class="chips" style="justify-content:center">${left.slice(0, 14).map(w => `<a class="chip" href="#w-${w.id}" style="text-decoration:none">${esc(shortName(w.n))}</a>`).join('')}${left.length > 14 ? `<span class="chip">+${left.length - 14} more</span>` : ''}</div>` : ''}
+    <div class="foot"><button class="btn primary" onclick="closeSheet()">${celebrate ? 'Cheers!' : 'Close'}</button></div></div>`);
 }
 
 /* ---------------- PLAN ---------------- */
@@ -883,7 +998,8 @@ async function renderPrefs() {
   const persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted().catch(() => false) : false;
   const refined = Object.values(S.kv.coords).filter(c => c && c[2] === 'osm').length; const gps = Object.values(S.kv.coords).filter(c => c && c[2] === 'gps').length;
   view.innerHTML = `
-  <div class="section" style="margin-top:8px"><h3>Home base</h3><div class="card stack">
+  ${familySection()}
+  <div class="section"><h3>Home base</h3><div class="card stack">
     <span>Distances and “near me” use <b>${esc(base().name)}</b>.</span>
     <div class="row"><button class="btn" data-act="baseFlint">Flint Hill, VA</button><button class="btn" data-act="baseGPS">${svg('locate')}Use my location</button></div>
     <label class="fld">Or a winery as base<select id="baseW"><option value="">Choose…</option>${ALL().map(w => `<option value="${w.id}">${esc(w.n)}</option>`).join('')}</select></label></div></div>
@@ -965,6 +1081,191 @@ function customSheet(id) {
   });
 }
 
+/* ---------------- family journal sync (Firebase Auth + Firestore) ----------------
+   Local IndexedDB stays the working copy (offline-first). Every synced record carries _u (last write, ms).
+   Conflicts resolve last-write-wins per record; deletions leave tombstones so offline phones don't resurrect them. */
+const SYNCED = ['state', 'visits', 'photos', 'trips', 'custom'];
+const FB_VER = '10.12.2';
+let keepScroll = false;
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(s); }); }
+const blobToDataURL = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+function dataURLtoBlob(u) { const [h, d] = u.split(','); const mime = (h.match(/data:([^;]+)/) || [])[1] || 'image/jpeg'; const bin = atob(d); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type: mime }); }
+async function shrinkForCloud(blob) {
+  const img = await decode(blob);
+  for (const [max, q] of [[1400, 0.78], [1200, 0.7], [1000, 0.62], [800, 0.55]]) { const b = await canvasBlob(img, max, q); const u = await blobToDataURL(b); if (u.length < 900000) return u; }
+  return blobToDataURL(await canvasBlob(img, 640, 0.5));
+}
+const clean = o => JSON.parse(JSON.stringify(o));
+function localGet(c, id) { return c === 'state' ? S.state[id] : (S[c] || []).find(x => x.id === id); }
+function localMap(c) { if (c === 'state') return { ...S.state }; const m = {}; (S[c] || []).forEach(x => (m[x.id] = x)); return m; }
+const AUTH_MSG = { 'auth/invalid-credential': 'Email or password is incorrect.', 'auth/wrong-password': 'Email or password is incorrect.', 'auth/user-not-found': 'No account with that email yet — tap Create account.', 'auth/email-already-in-use': 'That email already has an account — tap Sign in.', 'auth/weak-password': 'Use a password of at least 6 characters.', 'auth/invalid-email': 'That email address looks incomplete.', 'auth/network-request-failed': 'No connection. Try again when you are online.', 'auth/popup-closed-by-user': 'Sign-in was cancelled.', 'auth/unauthorized-domain': 'This site is not on Firebase’s authorized domains yet (setup step 3).', 'auth/operation-not-allowed': 'This sign-in method is not turned on in Firebase (setup step 2).' };
+const authMsg = e => AUTH_MSG[e && e.code] || (e && e.message) || 'Something went wrong.';
+
+const Sync = {
+  enabled: !!window.FIREBASE_CONFIG, user: null, db: null, auth: null, status: 'off', msg: '', ready: {}, unsub: [], tombs: {}, joining: false,
+  me() { const u = this.user; return u ? (u.displayName || (u.email || '').split('@')[0]) : ''; },
+  live() { return !!(this.user && this.user.emailVerified && this.db && this.status !== 'denied'); },
+  async init() {
+    if (!this.enabled) return;
+    try { if (!window.firebase) for (const m of ['app', 'auth', 'firestore']) await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`); }
+    catch (e) { this.set('error', 'Sync could not load — check your connection.'); return; }
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+      this.auth = firebase.auth(); this.db = firebase.firestore();
+      try { await this.db.enablePersistence({ synchronizeTabs: true }); } catch (e) { /* another tab or unsupported: still works online */ }
+      this.auth.getRedirectResult().catch(e => toast(authMsg(e)));
+      this.auth.onAuthStateChanged(u => this.onUser(u));
+    } catch (e) { this.set('error', e.message); return; }
+    window.addEventListener('online', () => this.user && this.set(this.allReady() ? 'synced' : 'connecting'));
+    window.addEventListener('offline', () => this.user && this.set('offline'));
+  },
+  set(st, msg) { this.status = st; this.msg = msg || ''; updateSyncBadge(); if (location.hash === '#prefs' && !sheetStack.length) renderPrefs(); },
+  allReady() { return SYNCED.every(c => this.ready[c]); },
+  fail(e) { console.warn('sync', e); if (e && e.code === 'permission-denied') this.set('denied'); else this.set('error', e && e.message); },
+  async onUser(u) {
+    this.unsub.forEach(f => f()); this.unsub = []; this.ready = {}; this.user = u;
+    if (!u) return this.set('signedout');
+    if (!u.emailVerified) return this.set('unverified');
+    this.set(navigator.onLine ? 'connecting' : 'offline');
+    try {
+      const meta = this.db.doc('meta/journal'); const m = await meta.get({ source: 'server' });
+      this.joining = m.exists; if (!m.exists) meta.set({ created: Date.now(), by: this.me() });
+      const ts = await this.db.collection('tombs').get({ source: 'server' }); this.tombs = {}; ts.forEach(d => (this.tombs[d.id] = d.data().t));
+    } catch (e) { if (e && e.code === 'permission-denied') return this.fail(e); if (!navigator.onLine || (e && e.code === 'unavailable')) { this.set('offline'); setTimeout(() => this.user === u && this.onUser(u), 15000); return; } return this.fail(e); }
+    this.unsub.push(this.db.collection('tombs').onSnapshot(sn => sn.docChanges().forEach(ch => { if (ch.type !== 'removed') this.tombs[ch.doc.id] = ch.doc.data().t; }), () => {}));
+    SYNCED.forEach(c => this.listen(c));
+  },
+  listen(c) {
+    const off = this.db.collection(c).onSnapshot({ includeMetadataChanges: true }, async snap => {
+      if (!this.ready[c]) {
+        if (snap.metadata.fromCache) return;               // only merge against the real server state
+        this.ready[c] = true; await this.initialMerge(c, snap); if (this.allReady()) this.set('synced');
+        return;
+      }
+      let changed = false;
+      for (const ch of snap.docChanges()) { if (ch.doc.metadata.hasPendingWrites) continue; changed = (await this.applyRemote(c, ch.doc.id, ch.type === 'removed' ? null : ch.doc.data())) || changed; }
+      if (changed) softRefresh();
+    }, e => this.fail(e));
+    this.unsub.push(off);
+  },
+  async initialMerge(c, snap) {
+    const remote = {}; snap.forEach(d => (remote[d.id] = d.data()));
+    const local = localMap(c); let changed = false; const pushes = [];
+    for (const [id, r] of Object.entries(remote)) {
+      const l = local[id]; const ru = r._u || 0, lu = l ? l._u || 0 : -1;
+      if (!l || ru > lu || (this.joining && ru === lu)) changed = (await this.applyRemote(c, id, r, true)) || changed;
+      else if (lu > ru) pushes.push([id, l]);
+    }
+    for (const [id, l] of Object.entries(local)) {
+      if (remote[id]) continue;
+      const tomb = this.tombs[c + '__' + id];
+      const seedOnly = (l._u || 0) <= 1;
+      const dupSeedVisit = c === 'visits' && l.seeded && Object.values(remote).some(v => v.seeded && v.wid === l.wid);
+      if ((tomb && tomb >= (l._u || 0)) || (this.joining && seedOnly) || dupSeedVisit) { await this.removeLocal(c, id); changed = true; continue; }
+      pushes.push([id, l]);
+    }
+    for (const [id, l] of pushes) await this.push(c, id, l);
+    if (changed) softRefresh();
+  },
+  async applyRemote(c, id, data, force) {
+    if (data === null) return this.removeLocal(c, id);
+    const l = localGet(c, id);
+    if (l && !force && (l._u || 0) >= (data._u || 0)) return false;
+    let rec = data;
+    if (c === 'photos') { rec = { ...data, thumb: data.thumb ? dataURLtoBlob(data.thumb) : new Blob(), _cloud: true }; if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); } }
+    if (c === 'state') { await DB.putRaw('state', rec, id); S.state[id] = rec; }
+    else { await DB.putRaw(c, rec); S[c] = (S[c] || []).filter(x => x.id !== id).concat(rec); }
+    if (c === 'custom') tagCache.delete(id);
+    return true;
+  },
+  async removeLocal(c, id) {
+    if (!localGet(c, id)) return false;
+    await DB.delRaw(c, id);
+    if (c === 'state') delete S.state[id]; else S[c] = (S[c] || []).filter(x => x.id !== id);
+    if (c === 'photos') { await DB.delRaw('fulls', id); if (urlCache.has(id)) { URL.revokeObjectURL(urlCache.get(id)); urlCache.delete(id); } }
+    return true;
+  },
+  async push(c, id, rec) {
+    if (!this.live()) return;
+    try {
+      if (c !== 'state' && !rec._cb) { rec._cb = this.me(); DB.putRaw(c, rec); }
+      let data = rec;
+      if (c === 'photos') {
+        data = { ...rec, thumb: rec.thumb instanceof Blob ? await blobToDataURL(rec.thumb) : rec.thumb }; delete data._cloud;
+        if (!rec._cloud) { const full = await DB.get('fulls', id); if (full) this.db.collection('photoData').doc(String(id)).set({ d: await shrinkForCloud(full), _u: rec._u }).catch(e => this.fail(e)); rec._cloud = true; DB.putRaw('photos', rec); }
+      }
+      this.db.collection(c).doc(String(id)).set(clean(data)).catch(e => this.fail(e));
+    } catch (e) { this.fail(e); }
+  },
+  local(c, id, rec) { if (this.live()) this.push(c, id, rec); },
+  localDel(c, id) {
+    if (!this.live()) return;
+    const t = Date.now(); this.tombs[c + '__' + id] = t;
+    this.db.collection('tombs').doc(c + '__' + id).set({ t }).catch(() => {});
+    this.db.collection(c).doc(String(id)).delete().catch(e => this.fail(e));
+    if (c === 'photos') this.db.collection('photoData').doc(String(id)).delete().catch(() => {});
+  },
+  async fetchFull(id) {
+    if (!this.live()) return null;
+    try { const d = await this.db.collection('photoData').doc(String(id)).get(); if (!d.exists) return null; const b = dataURLtoBlob(d.data().d); await DB.putRaw('fulls', b, id); return b; } catch (e) { return null; }
+  },
+  async google() {
+    const p = new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' });
+    try { await this.auth.signInWithPopup(p); }
+    catch (e) { if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/cancelled-popup-request'].includes(e.code)) return this.auth.signInWithRedirect(p); toast(authMsg(e)); }
+  },
+  async emailSignIn(email, pw) { await this.auth.signInWithEmailAndPassword(email, pw); },
+  async emailCreate(name, email, pw) { const cr = await this.auth.createUserWithEmailAndPassword(email, pw); if (name) await cr.user.updateProfile({ displayName: name }); await cr.user.sendEmailVerification(); },
+  async refresh() { if (!this.user) return; await this.user.reload(); this.onUser(this.auth.currentUser); },
+  async signOut() { await this.auth.signOut(); }
+};
+let _srT = null;
+function softRefresh() { clearTimeout(_srT); _srT = setTimeout(doSoftRefresh, 700); }
+function doSoftRefresh() {
+  if (sheetStack.length || document.querySelector('.viewer') || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) { softRefresh(); return; }
+  if ((location.hash || '#home') === '#map') return;
+  const y = scrollY; keepScroll = true;
+  Promise.resolve(route()).then(() => { keepScroll = false; window.scrollTo(0, y); checkBadges(); });
+}
+const SYNC_LABEL = { off: 'Not set up', signedout: 'Signed out', unverified: 'Verify your email', connecting: 'Syncing…', synced: 'Synced', offline: 'Offline — will sync later', denied: 'Not on the family list', error: 'Sync problem' };
+function syncBadge() {
+  const s = Sync.status; const col = s === 'synced' ? 'var(--vine)' : s === 'connecting' || s === 'offline' ? 'var(--gold)' : s === 'off' ? 'var(--muted)' : 'var(--claret)';
+  return `<button class="iconbtn" data-act="go" data-to="prefs" aria-label="Family journal: ${esc(SYNC_LABEL[s] || s)}" title="${esc(SYNC_LABEL[s] || s)}" style="color:${col}">${svg('cloud')}</button>`;
+}
+function updateSyncBadge() { const b = document.getElementById('syncBadge'); if (b) b.innerHTML = syncBadge(); }
+function familySection() {
+  if (!Sync.enabled) return `<div class="section"><h3>Family journal</h3><div class="card stack"><span class="small muted">Not set up yet. Once the Firebase settings file (firebase-config.js) is in your GitHub repo, family members can sign in here and share one live journal.</span></div></div>`;
+  const s = Sync.status; const u = Sync.user;
+  let body = '';
+  if (s === 'error' && !Sync.auth) body = `<span class="small" style="color:var(--claret)">${esc(Sync.msg || 'Sync could not start.')}</span>`;
+  else if (!u) body = `<span class="small muted">Sign in to share visits, photos, notes, scores, and trips with the family. Everything still works offline.</span>
+      <div class="row"><button class="btn primary" data-act="fbGoogle">Continue with Google</button><button class="btn" data-act="fbEmail">Use email &amp; password</button></div>`;
+  else {
+    const col = s === 'synced' ? 'var(--vine)' : s === 'connecting' || s === 'offline' ? 'var(--gold)' : 'var(--claret)';
+    body = `<div class="row" style="justify-content:space-between"><span><b>${esc(Sync.me())}</b><br><span class="small muted">${esc(u.email || '')}</span></span><span class="chip" style="color:${col}">${svg('cloud')}${esc(SYNC_LABEL[s] || s)}</span></div>
+      ${s === 'unverified' ? `<span class="small">We sent a verification link to ${esc(u.email)}. Open it, then tap <b>I’ve verified</b>.</span><div class="row"><button class="btn primary" data-act="fbRefresh">I’ve verified</button><button class="btn" data-act="fbResend">Resend link</button></div>` : ''}
+      ${s === 'denied' ? `<span class="small">This account isn’t on the family list yet. Ask Claudio to add <b>${esc(u.email)}</b> to the journal’s sharing rules, then tap Try again.</span><div><button class="btn" data-act="fbRefresh">Try again</button></div>` : ''}
+      ${s === 'error' ? `<span class="small" style="color:var(--claret)">${esc(Sync.msg)}</span><div><button class="btn" data-act="fbRefresh">Try again</button></div>` : ''}
+      ${s === 'synced' || s === 'connecting' || s === 'offline' ? `<span class="small muted">Visits, photos, notes, scores, wine ratings, bottles, and trips are shared with everyone on the family list. Home base, theme, and map pins stay per phone.</span>` : ''}
+      <div class="row"><label class="fld" style="flex:1">Name on your entries<input type="text" id="fbName" value="${esc(u.displayName || '')}" placeholder="e.g. Claudio"></label><button class="btn" data-act="fbSaveName" style="align-self:flex-end">Save</button></div>
+      <div><button class="btn" data-act="fbSignOut">Sign out</button></div>`;
+  }
+  return `<div class="section"><h3>Family journal</h3><div class="card stack">${body}</div></div>`;
+}
+function emailSheet() {
+  const el = openSheet(`<h2>Sign in with email</h2><form class="stack" id="ef">
+    <label class="fld">Your name (for new accounts)<input type="text" id="eN" placeholder="e.g. Ana" autocomplete="name"></label>
+    <label class="fld">Email<input type="email" id="eE" required autocomplete="email" autocapitalize="off" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px"></label>
+    <label class="fld">Password<input type="password" id="eP" required minlength="6" autocomplete="current-password" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px"></label>
+    <span class="small muted" id="eMsg">Use an email address that’s on the family list.</span>
+    <div class="foot"><button type="button" class="btn" id="eCreate">Create account</button><button type="submit" class="btn primary">Sign in</button></div>
+    <button type="button" class="linkbtn" id="eForgot" style="align-self:flex-start">Forgot password?</button></form>`);
+  const msg = t => ($('#eMsg', el).textContent = t);
+  $('#ef', el).addEventListener('submit', async e => { e.preventDefault(); try { await Sync.emailSignIn($('#eE', el).value.trim(), $('#eP', el).value); closeSheet(); toast('Signed in'); } catch (er) { msg(authMsg(er)); } });
+  $('#eCreate', el).onclick = async () => { if (!$('#eE', el).reportValidity() || !$('#eP', el).reportValidity()) return; try { await Sync.emailCreate($('#eN', el).value.trim(), $('#eE', el).value.trim(), $('#eP', el).value); closeSheet(); toast('Account created — check your email for the verification link'); } catch (er) { msg(authMsg(er)); } };
+  $('#eForgot', el).onclick = async () => { const em = $('#eE', el).value.trim(); if (!em) return msg('Type your email first.'); try { await Sync.auth.sendPasswordResetEmail(em); msg('Reset link sent to ' + em + '.'); } catch (er) { msg(authMsg(er)); } };
+}
+
 /* ---------------- actions ---------------- */
 const ACT = {
   go: el => go(el.dataset.to),
@@ -973,7 +1274,7 @@ const ACT = {
   coll: (el, e) => { e.preventDefault(); F.coll = el.dataset.k; if (el.dataset.k) { F.on.clear(); F.region = ''; } go('wineries'); },
   toggleF: el => { const f = el.dataset.f; F.on.has(f) ? F.on.delete(f) : F.on.add(f); if (f === 'visited') F.on.delete('unvisited'); if (f === 'unvisited') F.on.delete('visited'); $$('#fchips .fchip').forEach(b => b.classList.toggle('on', F.on.has(b.dataset.f))); fillList(); },
   region: el => { F.region = el.dataset.r; renderList(); },
-  status: async el => { const id = el.dataset.id, s = el.dataset.s; const cur = st(id).status; if (s === 'visited' && cur === 'visited' && visitsOf(id).length) { toast('Has logged visits — delete them to unmark'); return; } await setSt(id, { status: cur === s ? '' : s }); toast(cur === s ? 'Removed' : s === 'visited' ? 'Marked visited — stamp collected' : 'Added to want-to-go'); renderWinery(id); },
+  status: async el => { const id = el.dataset.id, s = el.dataset.s; const cur = st(id).status; if (s === 'visited' && cur === 'visited' && visitsOf(id).length) { toast('Has logged visits — delete them to unmark'); return; } await setSt(id, { status: cur === s ? '' : s }); toast(cur === s ? 'Removed' : s === 'visited' ? 'Marked visited — stamp collected' : 'Added to want-to-go'); renderWinery(id); checkBadges(); },
   fav: async el => { const id = el.dataset.id; await setSt(id, { fav: !st(id).fav }); renderWinery(id); },
   logVisit: el => visitSheet(el.dataset.id),
   editVisit: el => visitSheet(null, el.dataset.vid),
@@ -999,6 +1300,13 @@ const ACT = {
   newTrip: () => tripSheet(),
   editTrip: el => tripSheet(el.dataset.tid),
   shareTrip: el => shareTrip(el.dataset.tid, el.dataset.d),
+  badgeInfo: el => badgeSheet(el.dataset.k),
+  fbGoogle: () => Sync.google(),
+  fbEmail: () => emailSheet(),
+  fbSignOut: async () => { await Sync.signOut(); toast('Signed out — this phone keeps its copy'); },
+  fbRefresh: () => Sync.refresh(),
+  fbResend: async () => { try { await Sync.user.sendEmailVerification(); toast('Verification link sent'); } catch (e) { toast(authMsg(e)); } },
+  fbSaveName: async () => { const n = $('#fbName').value.trim(); if (!n || !Sync.user) return; await Sync.user.updateProfile({ displayName: n }); toast('Name saved'); renderPrefs(); },
   addStop: el => stopSheet(el.dataset.tid, el.dataset.d),
   quickAdd: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].push(el.dataset.id); await DB.put('trips', t); renderTrip(t.id); },
   rmStop: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].splice(+el.dataset.i, 1); await DB.put('trips', t); renderTrip(t.id); },
@@ -1012,7 +1320,7 @@ const ACT = {
   import: () => $('#importPick').click(),
   persist: async () => { const ok = navigator.storage && (await navigator.storage.persist()); toast(ok ? 'Storage protected' : 'Install the app first, then try again'); renderPrefs(); },
   theme: async el => { S.kv.settings.theme = el.dataset.k; await saveKV('settings'); applyTheme(); renderPrefs(); },
-  reset: async () => { if (await confirmSheet('Erase everything?', 'All visits, photos, notes, scores, and trips on this phone are deleted. Save a backup first if you might want them.', 'Erase')) { for (const s of ['state', 'visits', 'photos', 'fulls', 'trips', 'custom', 'kv']) await DB.clear(s); location.hash = ''; location.reload(); } }
+  reset: async () => { if (await confirmSheet('Erase everything?', Sync.live() ? 'This phone’s copy is cleared and then re-downloaded from the family journal. The shared journal is not affected.' : 'All visits, photos, notes, scores, and trips on this phone are deleted. Save a backup first if you might want them.', 'Erase')) { for (const s of ['state', 'visits', 'photos', 'fulls', 'trips', 'custom', 'kv']) await DB.clear(s); location.hash = ''; location.reload(); } }
 };
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || !ACT[el.dataset.act]) return; ACT[el.dataset.act](el, e); });
 
@@ -1046,6 +1354,8 @@ window.addEventListener('resize', debounce(() => paintRidges(), 200));
   applyTheme();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); route(); });
   route();
+  checkBadges();
+  Sync.init();
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   setTimeout(() => refinePins(false), 4000);
 })();
