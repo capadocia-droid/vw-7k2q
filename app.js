@@ -108,8 +108,8 @@ async function loadAll() {
   keys.forEach((k, i) => (S.state[k] = vals[i]));
   [S.visits, S.photos, S.trips, S.custom] = await Promise.all([DB.all('visits'), DB.all('photos'), DB.all('trips'), DB.all('custom')]);
   for (const k of KV_KEYS) S.kv[k] = await DB.get('kv', k);
-  S.kv.settings = Object.assign({ base: G.defaultBase, myMaps: 'https://maps.app.goo.gl/4qUU4Dng4q5XTpmm7', theme: 'system' }, S.kv.settings || {});
-  if (/1k3bSB_lTC7yy6nDtguaLcLDxvJUnBhg/.test(S.kv.settings.myMaps || '')) { S.kv.settings.myMaps = 'https://maps.app.goo.gl/4qUU4Dng4q5XTpmm7'; await saveKV('settings'); }
+  S.kv.settings = Object.assign({ base: G.defaultBase, myMaps: 'https://maps.app.goo.gl/PPRW5BtEdxrKy36x8', theme: 'system' }, S.kv.settings || {});
+  if (/1k3bSB_lTC7yy6nDtguaLcLDxvJUnBhg|4qUU4Dng4q5XTpmm7/.test(S.kv.settings.myMaps || '')) { S.kv.settings.myMaps = 'https://maps.app.goo.gl/PPRW5BtEdxrKy36x8'; await saveKV('settings'); }
   S.kv.coords = S.kv.coords || {};
   S.kv.refine = S.kv.refine || {};
   if (!S.kv.seeded) await seed();
@@ -1261,7 +1261,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 26 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 27 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {
