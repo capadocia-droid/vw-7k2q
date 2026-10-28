@@ -1161,6 +1161,7 @@ function tripText(t, onlyDay, compact) {
   });
   if (!ds.length) out.push('', 'No stops planned yet.');
   out.push('', 'Distances and drive times are estimates; hours are published schedules, so confirm before you go.');
+  out.push('', 'Sent from VA Wine Passport app');
   return out.join('\n');
 }
 function tripHTML(t, onlyDay) {
@@ -1185,14 +1186,14 @@ function tripHTML(t, onlyDay) {
     h += `<div style="${G2};font-size:13px">🚗 Back to ${esc(t.base.name)}: ${esc(legTxt(L.back))}</div>`;
     h += `<div><b>Day's driving:</b> ${esc(legTxt(L.tot, L.totMin))} · ${A(routeURL(t, stops), 'Directions for the day')}</div>`;
   });
-  return h + '<p style="color:#665F70;font-size:13px;margin-top:18px">Distances and drive times are estimates; hours are published schedules, so confirm before you go.</p></div>';
+  return h + '<p style="color:#665F70;font-size:13px;margin-top:18px">Distances and drive times are estimates; hours are published schedules, so confirm before you go.</p><p style="color:#665F70;font-size:13px;margin:10px 0 0"><i>Sent from VA Wine Passport app</i></p></div>';
 }
 function shareTrip(tid, day) {
   const t = S.trips.find(x => x.id === tid); if (!t) return;
   const title = day ? `${t.name} · ${fmtDate(day)}` : t.name; const text = tripText(t, day || null);
   const body = tripText(t, day || null, true);
   let mailHref = `mailto:?subject=${enc(title)}&body=${enc(body)}`;
-  if (mailHref.length > 7500) mailHref = `mailto:?subject=${enc(title)}&body=${enc('(Itinerary is long: it was copied — paste it here.)\n\n')}`;
+  if (mailHref.length > 7500) mailHref = `mailto:?subject=${enc(title)}&body=${enc('(Itinerary is long: it was copied — paste it here.)\n\n\nSent from VA Wine Passport app')}`;
   const el = openSheet(`<h2>Share ${esc(day ? dayTitle(fromISO(day)) : t.name)}</h2>
     <div class="stack">
       <a class="btn block shopt" id="shEmail" href="${esc(mailHref)}">${svg('share')}<span style="text-align:left"><b>Email</b><br><span class="small muted" style="font-weight:400">Opens a new email with the full itinerary already in it</span></span></a>
@@ -1260,7 +1261,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 25 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 26 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {
