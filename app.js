@@ -1107,6 +1107,21 @@ function dayLegs(t, stops) {
 const hoursTxt = (w, dt) => { const h = hoursOn(w, dt); return h ? (h.length ? 'Open ' + fmtRange(h) : 'Closed that day') : 'Check hours'; };
 /* link to the formatted itinerary page (trip.html) — everything travels in the URL hash */
 function tripLink(t, onlyDay) {
+  // readable short form when every stop is a guide winery: #n=Name&b=Base&r=start-end&d=yyyymmdd.id.id&m=yyyymmdd.id.HHMM.note
+  const qe = v => enc(v).replace(/%20/g, '+').replace(/%2C/g, ',').replace(/%3A/g, ':');
+  const ds = tripDays(t, onlyDay); const seedOnly = ds.every(x => x.stops.every(w => G.wineries.some(g => g.id === w.id)));
+  const page = new URL('trip.html', location.href).href.replace(/[?#].*$/, '');
+  if (seedOnly) {
+    const db = G.defaultBase; const far = Math.abs(t.base.lat - db.lat) > 0.01 || Math.abs(t.base.lng - db.lng) > 0.01;
+    const a = [`n=${qe(t.name)}`, `b=${qe(t.base.name)}`];
+    if (far) a.push(`ll=${Math.round(t.base.lat * 1e4) / 1e4},${Math.round(t.base.lng * 1e4) / 1e4}`);
+    const st = (onlyDay || t.start).replace(/-/g, ''), en = (onlyDay || t.end).replace(/-/g, '');
+    a.push(`r=${st}${en !== st ? '-' + en : ''}`);
+    if (t.notes && !onlyDay) a.push(`o=${qe(t.notes)}`);
+    ds.forEach(({ d, stops }) => { const dd = d.replace(/-/g, ''); a.push(`d=${dd}${stops.map(w => '.' + w.id).join('')}`);
+      stops.forEach(w => { const m = smeta(t, d, w.id); if (m.time || m.note) a.push(`m=${dd}.${w.id}.${(m.time || '').replace(':', '')}.${qe(m.note || '')}`); }); });
+    return page + '#' + a.join('&');
+  }
   const r4 = x => Math.round(x * 1e4) / 1e4; const seed = id => G.wineries.some(g => g.id === id);
   const days = tripDays(t, onlyDay).map(({ d, stops }) => [d.replace(/-/g, ''), stops.map(w => {
     const fix = S.kv.coords && S.kv.coords[w.id] && S.kv.coords[w.id][0];
@@ -1116,7 +1131,7 @@ function tripLink(t, onlyDay) {
   })]);
   const P = [1, t.name, onlyDay || t.start, onlyDay || t.end, t.base.name, r4(t.base.lat), r4(t.base.lng), onlyDay ? '' : (t.notes || ''), days];
   const bytes = new TextEncoder().encode(JSON.stringify(P)); let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
-  return new URL('trip.html', location.href).href.replace(/[?#].*$/, '') + '#' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return page + '#' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 function tripText(t, onlyDay, compact) {
   const out = [onlyDay ? `${t.name} · ${dayTitle(fromISO(onlyDay))}` : t.name];
@@ -1244,7 +1259,8 @@ async function renderPrefs() {
     ${(() => { const hid = EVERY().filter(w => st(w.id).hidden).sort((a, b) => a.n.localeCompare(b.n)); return hid.length ? `<h3 style="margin-top:8px">Removed from our guide · ${hid.length}</h3>${hid.map(w => `<div class="sugg"><a href="#w-${w.id}" style="color:var(--ink);text-decoration:none"><b>${esc(w.n)}</b><br><span class="small muted">${esc(w.town)}</span></a><button class="btn" data-act="restoreW" data-id="${w.id}">Restore</button></div>`).join('')}` : ''; })()}</div></div>
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
-  <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>`;
+  <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 25 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {

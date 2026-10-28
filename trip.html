@@ -105,7 +105,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
   const mapsQ = w => `https://www.google.com/maps/search/?api=1&query=${enc(placeQ(w))}`;
   const addrOf = w => w.addr || (G.addr && G.addr[w.id]) || placeQ(w).replace(/^[^,]+,\s*/, '');
   const DOGLBL = { yes: 'Dogs welcome', limited: 'Dogs in some areas only', no: 'No dogs', unknown: 'Dog policy unconfirmed' };
-  const dogOf = w => { const d = (w.dogs || '').trim(); if (/^not permitted\.?$/i.test(d)) return 'No dogs allowed.'; return d || (DOGLBL[w.dog] || 'Dog policy unconfirmed') + '.'; };
+  const dogOf = w => { const d = (w.dogs || '').trim(); if (/^not permitted/i.test(d)) return d.replace(/^not permitted\.?/i, 'No dogs allowed.'); return d || (DOGLBL[w.dog] || 'Dog policy unconfirmed') + '.'; };
   const briefOf = w => { const f = (w.features || []).slice(0, 3); if (f.length) return f.map((x, i) => i ? x.charAt(0).toLowerCase() + x.slice(1) : x).join(', ') + '.'; return ''; };
 
   function decode(h) {
@@ -122,7 +122,18 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
   }
   const head = document.getElementById('head'), main = document.getElementById('main');
   let P;
-  try { P = decode(location.hash.slice(1)); if (!Array.isArray(P) || P[0] !== 1) throw 0; }
+  try {
+    const hs = location.hash.slice(1);
+    if (/^n=/.test(hs)) { // readable form
+      const q = new URLSearchParams(hs); const db = G.defaultBase || { lat: 38.7651, lng: -78.0945 };
+      const ll = (q.get('ll') || '').split(',').map(Number); const iso = x => `${x.slice(0, 4)}-${x.slice(4, 6)}-${x.slice(6, 8)}`;
+      const [r1, r2] = (q.get('r') || '').split('-'); const meta = {};
+      q.getAll('m').forEach(m => { const [dd, id, tm, ...rest] = m.split('.'); meta[dd + '|' + id] = [tm ? tm.slice(0, 2) + ':' + tm.slice(2) : '', rest.join('.')]; });
+      const days = q.getAll('d').map(x => { const [dd, ...ids] = x.split('.'); return [dd, ids.map(id => meta[dd + '|' + id] ? [id, ...meta[dd + '|' + id]] : id)]; });
+      P = [1, q.get('n') || 'Wine trip', iso(r1 || days[0][0]), iso(r2 || r1 || days[0][0]), q.get('b') || 'base', ll[0] || db.lat, ll[1] || db.lng, q.get('o') || '', days];
+    } else P = decode(hs);
+    if (!Array.isArray(P) || P[0] !== 1) throw 0;
+  }
   catch (e) { main.innerHTML = '<div class="err"><b>This itinerary link looks incomplete.</b><br>Ask the sender to share it again from the app.</div>'; return; }
   const [, name, start, end, baseName, bLat, bLng, notes, days] = P;
   const base = [bLat, bLng];
