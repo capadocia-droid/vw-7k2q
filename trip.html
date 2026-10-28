@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wine Trip Itinerary</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#7B1E3C">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F1F2F5; --surface:#FFFFFF; --sunk:#E7E8EE; --ink:#221A26; --muted:#665F70; --line:#D9DAE1;
+  --claret:#7B1E3C; --claret-soft:#F3E3E8; --ridge:#3F5A7A; --warn:#8A5A00; --warn-soft:#FBF0D9; --ok:#2F6B45;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#141218; --surface:#1E1B23; --sunk:#26222C; --ink:#EEE9F0; --muted:#A79FB1; --line:#332E3A;
+    --claret:#E07494; --claret-soft:#3A2129; --ridge:#93B3D8; --warn:#E8B860; --warn-soft:#3A2E17; --ok:#7CC796; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
+a{color:var(--claret)}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 40px}
+header.top{background:var(--claret);color:#fff;padding:28px 16px 22px}
+@media (prefers-color-scheme: dark){ header.top{background:#5A1530} }
+header.top .in{max-width:640px;margin:0 auto}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;font-weight:600}
+h1{font:400 30px/1.15 'Young Serif',Georgia,serif;margin:6px 0 8px}
+.sub{opacity:.9;font-size:15px}
+.notes{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:16px 0 0;font-size:15px}
+.day{margin-top:26px}
+.dayhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h2{font:400 22px/1.2 'Young Serif',Georgia,serif;margin:0}
+.hol{font-size:12px;font-weight:600;background:var(--warn-soft);color:var(--warn);padding:2px 9px;border-radius:999px}
+.daytot{color:var(--muted);font-size:14px;margin:4px 0 10px}
+.leg{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;padding:6px 0 6px 20px;border-left:2px dashed var(--line);margin-left:15px}
+.stop{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;position:relative}
+.stop .num{position:absolute;left:-1px;top:-1px;background:var(--claret);color:#fff;font-weight:700;font-size:13px;width:30px;height:30px;border-radius:16px 0 12px 0;display:grid;place-items:center}
+.stop h3{font:400 19px/1.25 'Young Serif',Georgia,serif;margin:0 0 2px 26px}
+.stop h3 a{color:var(--ink);text-decoration:none}
+.addr{margin:0 0 8px 26px;font-size:14px}
+.addr a{color:var(--muted)}
+.line{display:flex;gap:9px;align-items:flex-start;font-size:15px;margin:5px 0}
+.line .ic{width:20px;flex:none;text-align:center}
+.closed{color:var(--warn);font-weight:600}
+.note{background:var(--claret-soft);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:15px}
+.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:600;text-decoration:none;color:var(--ink);background:var(--surface)}
+.btn{display:flex;justify-content:center;align-items:center;gap:8px;background:var(--claret);color:#fff;text-decoration:none;font-weight:600;border-radius:999px;padding:12px 16px;margin-top:12px}
+@media (prefers-color-scheme: dark){ .btn{color:#1E1B23} }
+.empty{color:var(--muted);font-style:italic}
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-height:1.6}
+.err{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:24px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in" id="head"><div class="eyebrow">Virginia wine trip</div><h1>Itinerary</h1></div></header>
+<main class="wrap" id="main"></main>
+<script src="data.js"></script>
+<script>
+(function () {
+  const G = window.GUIDE || { wineries: [], addr: {} };
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const enc = encodeURIComponent;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const DAYN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const fromISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d, 12); };
+  const fmtDate = (s, long) => { const d = fromISO(s); return long ? `${DAYN[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}` : `${MONTHS[d.getMonth()]} ${d.getDate()}`; };
+  function parseHours(str) {
+    if (!str) return null; const wk = [[], [], [], [], [], [], []];
+    str.split('|').forEach(seg => {
+      const m = seg.trim().match(/^([A-Za-z,\-]+)\s+(\d{1,2})(?::(\d\d))?-(\d{1,2})(?::(\d\d))?$/); if (!m) return;
+      const o = +m[2] * 60 + +(m[3] || 0), c = +m[4] * 60 + +(m[5] || 0);
+      m[1].split(',').forEach(part => {
+        const [a, b] = part.split('-'); const ia = DAYS.indexOf(a); if (ia < 0) return;
+        if (!b) { wk[ia].push([o, c]); return; }
+        const ib = DAYS.indexOf(b); let i = ia;
+        for (let k = 0; k < 7; k++) { wk[i].push([o, c]); if (i === ib) break; i = (i + 1) % 7; }
+      });
+    });
+    return wk;
+  }
+  function schedule(w, d) { const mo = d.getMonth() + 1; let h = w.h; (w.seasons || []).forEach(s => { if (s.m.includes(mo)) h = s.h; }); return parseHours(h); }
+  function fmtT(min) { let h = Math.floor(min / 60); const m = min % 60, ap = h >= 12 && h < 24 ? 'PM' : 'AM'; h = h % 12 || 12; return m ? `${h}:${String(m).padStart(2, '0')} ${ap}` : `${h} ${ap}`; }
+  const fmtRange = r => r.map(([o, c]) => `${fmtT(o)}–${fmtT(c)}`).join(', ');
+  function hoursOn(w, d) { const s = schedule(w, d); if (!s) return null; if ((w.closed || []).includes(`${d.getMonth() + 1}-${d.getDate()}`)) return []; return s[d.getDay()]; }
+  const fmtClock = v => { if (!v) return ''; const [h, m] = v.split(':').map(Number); return fmtT(h * 60 + m); };
+  function holiday(d) {
+    const md = `${d.getMonth() + 1}-${d.getDate()}`;
+    const fixed = { '12-24': 'Christmas Eve', '12-25': 'Christmas Day', '12-31': "New Year's Eve", '1-1': "New Year's Day", '7-4': 'Independence Day' };
+    if (fixed[md]) return fixed[md];
+    if (d.getMonth() === 10 && d.getDay() === 4 && d.getDate() >= 22 && d.getDate() <= 28) return 'Thanksgiving';
+    return null;
+  }
+  function miles(a, b) { const R = 3958.8, t = x => (x * Math.PI) / 180; const dLa = t(b[0] - a[0]), dLo = t(b[1] - a[1]); const h = Math.sin(dLa / 2) ** 2 + Math.cos(t(a[0])) * Math.cos(t(b[0])) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
+  const roadMi = (a, b) => miles(a, b) * 1.3;
+  const legMin = mi => Math.round((mi / 40) * 60) + 3;
+  const fmtDrive = m => (m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`);
+  const legTxt = (mi, min) => `${mi < 10 ? mi.toFixed(1) : Math.round(mi)} mi · ~${fmtDrive(min == null ? legMin(mi) : min)}`;
+  const placeQ = w => `${w.n}, ${w.town}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', VA'}`;
+  const mapsQ = w => `https://www.google.com/maps/search/?api=1&query=${enc(placeQ(w))}`;
+  const addrOf = w => w.addr || (G.addr && G.addr[w.id]) || placeQ(w).replace(/^[^,]+,\s*/, '');
+  const DOGLBL = { yes: 'Dogs welcome', limited: 'Dogs in some areas only', no: 'No dogs', unknown: 'Dog policy unconfirmed' };
+  const dogOf = w => { const d = (w.dogs || '').trim(); if (/^not permitted\.?$/i.test(d)) return 'No dogs allowed.'; return d || (DOGLBL[w.dog] || 'Dog policy unconfirmed') + '.'; };
+  const briefOf = w => { const f = (w.features || []).slice(0, 3); if (f.length) return f.map((x, i) => i ? x.charAt(0).toLowerCase() + x.slice(1) : x).join(', ') + '.'; return ''; };
+
+  function decode(h) {
+    const s = h.replace(/-/g, '+').replace(/_/g, '/'); const pad = s + '==='.slice((s.length + 3) % 4);
+    const bin = atob(pad); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  // payload: [1, name, start, end, baseName, baseLat, baseLng, notes, days:[[yyyymmdd, stops]]]
+  // stop: ref | [ref, time, note]; ref: id | {i:id, la, lo} | {n, t, a, la, lo, h, dg, f}
+  function resolve(ref) {
+    if (typeof ref === 'string') return G.wineries.find(w => w.id === ref) || { n: ref, town: '' };
+    if (ref.i) { const w = G.wineries.find(x => x.id === ref.i); return w ? Object.assign({}, w, { lat: ref.la, lng: ref.lo }) : { n: ref.i, town: '' }; }
+    return { n: ref.n, town: ref.t || '', addr: ref.a, lat: ref.la, lng: ref.lo, h: ref.h, dogs: ref.dg, features: ref.f || [], url: ref.u };
+  }
+  const head = document.getElementById('head'), main = document.getElementById('main');
+  let P;
+  try { P = decode(location.hash.slice(1)); if (!Array.isArray(P) || P[0] !== 1) throw 0; }
+  catch (e) { main.innerHTML = '<div class="err"><b>This itinerary link looks incomplete.</b><br>Ask the sender to share it again from the app.</div>'; return; }
+  const [, name, start, end, baseName, bLat, bLng, notes, days] = P;
+  const base = [bLat, bLng];
+  document.title = name + ' · Itinerary';
+  const oneDay = days.length === 1 && start === end;
+  head.innerHTML = `<div class="eyebrow">Virginia wine trip</div><h1>${esc(name)}</h1>
+    <div class="sub">${start === end ? esc(fmtDate(start, true)) : `${esc(fmtDate(start))} – ${esc(fmtDate(end, true))}`}<br>Staying in ${esc(baseName)}</div>`;
+  let h = notes ? `<div class="notes">${esc(notes)}</div>` : '';
+  const routeURL = stops => 'https://www.google.com/maps/dir/' + [baseName, ...stops.map(placeQ), baseName].map(x => enc(x).replace(/%20/g, '+').replace(/%2C/g, ',')).join('/');
+  days.forEach(([ds, raw]) => {
+    const d = `${ds.slice(0, 4)}-${ds.slice(4, 6)}-${ds.slice(6, 8)}`; const dt = fromISO(d); const hol = holiday(dt);
+    const stops = raw.map(s => Array.isArray(s) ? { w: resolve(s[0]), time: s[1], note: s[2] } : { w: resolve(s) });
+    h += `<section class="day"><div class="dayhead"><h2>${esc(DAYN[dt.getDay()])}, ${esc(MONTHS[dt.getMonth()])} ${dt.getDate()}</h2>${hol ? `<span class="hol">${esc(hol)}: confirm hours</span>` : ''}</div>`;
+    if (!stops.length) { h += '<p class="empty">No stops planned yet.</p></section>'; return; }
+    let prev = base, prevName = baseName, tot = 0, totMin = 0; const legs = [];
+    stops.forEach(({ w }) => { const p = [w.lat, w.lng]; const mi = (p[0] && prev[0]) ? roadMi(prev, p) : 0; legs.push({ mi, from: prevName }); tot += mi; totMin += legMin(mi); prev = p; prevName = w.n; });
+    const back = prev[0] ? roadMi(prev, base) : 0; tot += back; totMin += legMin(back);
+    h += `<div class="daytot">${stops.length} stop${stops.length > 1 ? 's' : ''} · about ${esc(legTxt(tot, totMin))} of driving</div>`;
+    stops.forEach(({ w, time, note }, i) => {
+      const hr = hoursOn(w, dt); const b = briefOf(w);
+      const hrTxt = hr ? (hr.length ? `Open ${fmtRange(hr)}` : '<span class="closed">Closed that day by its published hours</span>') : (w.hoursText ? esc(w.hoursText) : 'Check hours before going');
+      h += `<div class="leg">🚗 ${esc(legTxt(legs[i].mi))} from ${esc(legs[i].from)}</div>
+      <article class="stop"><div class="num">${i + 1}</div>
+        <h3><a href="${esc(mapsQ(w))}">${esc(w.n)}</a></h3>
+        <div class="addr"><a href="${esc(mapsQ(w))}">${esc(addrOf(w))}</a></div>
+        <div class="line"><span class="ic">🕐</span><span>${hr && hr.length ? esc(hrTxt) : hrTxt}${time ? ` · <b>arrive ~${esc(fmtClock(time))}</b>` : ''}</span></div>
+        ${b ? `<div class="line"><span class="ic">✨</span><span>${esc(b)}</span></div>` : ''}
+        ${w.flights && (Array.isArray(w.flights) ? w.flights[0] : w.flights) ? `<div class="line"><span class="ic">🍷</span><span>${esc(Array.isArray(w.flights) ? w.flights[0] : String(w.flights).split(/(?<=\.)\s/)[0])}</span></div>` : ''}
+        <div class="line"><span class="ic">🐕</span><span>${esc(dogOf(w))}</span></div>
+        ${w.res ? `<div class="line"><span class="ic">📅</span><span>${esc(String(w.res).split(/(?<=\.)\s/)[0])}</span></div>` : ''}
+        ${note ? `<div class="note">📝 ${esc(note)}</div>` : ''}
+        <div class="links"><a class="pill" href="https://www.google.com/maps/dir/?api=1&destination=${enc(placeQ(w))}&travelmode=driving">Directions</a>${w.url ? `<a class="pill" href="${esc(w.url)}">Website</a>` : ''}${w.menuUrl ? `<a class="pill" href="${esc(w.menuUrl)}">Menu</a>` : ''}</div>
+      </article>`;
+    });
+    h += `<div class="leg">🚗 ${esc(legTxt(back))} back to ${esc(baseName)}</div>`;
+    h += `<a class="btn" href="${esc(routeURL(stops.map(s => s.w)))}">Open the whole day in Google Maps</a></section>`;
+  });
+  if (!days.length) h += '<p class="empty">No stops planned yet.</p>';
+  h += `<footer>Distances and drive times are estimates; Google Maps gives exact times.<br>Hours are published schedules, so confirm before you go.<br><br>VA Wine Passport · © Montanha e Neve 2026</footer>`;
+  main.innerHTML = h;
+})();
+</script>
+</body>
+</html>

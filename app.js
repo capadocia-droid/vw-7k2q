@@ -1105,10 +1105,24 @@ function dayLegs(t, stops) {
   return { legs, back, tot, totMin };
 }
 const hoursTxt = (w, dt) => { const h = hoursOn(w, dt); return h ? (h.length ? 'Open ' + fmtRange(h) : 'Closed that day') : 'Check hours'; };
+/* link to the formatted itinerary page (trip.html) — everything travels in the URL hash */
+function tripLink(t, onlyDay) {
+  const r4 = x => Math.round(x * 1e4) / 1e4; const seed = id => G.wineries.some(g => g.id === id);
+  const days = tripDays(t, onlyDay).map(({ d, stops }) => [d.replace(/-/g, ''), stops.map(w => {
+    const fix = S.kv.coords && S.kv.coords[w.id] && S.kv.coords[w.id][0];
+    const ref = seed(w.id) ? (fix ? { i: w.id, la: r4(pos(w)[0]), lo: r4(pos(w)[1]) } : w.id)
+      : { n: w.n, t: w.town, a: w.addr || '', la: r4(pos(w)[0]), lo: r4(pos(w)[1]), h: w.h || '', dg: w.dogs || '', f: (w.features || []).slice(0, 3), u: w.url || '' };
+    const m = smeta(t, d, w.id); return m.time || m.note ? [ref, m.time || '', m.note || ''] : ref;
+  })]);
+  const P = [1, t.name, onlyDay || t.start, onlyDay || t.end, t.base.name, r4(t.base.lat), r4(t.base.lng), onlyDay ? '' : (t.notes || ''), days];
+  const bytes = new TextEncoder().encode(JSON.stringify(P)); let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return new URL('trip.html', location.href).href.replace(/[?#].*$/, '') + '#' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 function tripText(t, onlyDay, compact) {
   const out = [onlyDay ? `${t.name} · ${dayTitle(fromISO(onlyDay))}` : t.name];
   if (!onlyDay) out.push(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)}`);
   out.push(`Staying in ${t.base.name}`); if (t.notes && !onlyDay) out.push(t.notes);
+  out.push('', `📍 Full itinerary with maps and links: ${tripLink(t, onlyDay)}`);
   const ds = tripDays(t, onlyDay);
   ds.forEach(({ d, dt, stops }) => {
     out.push(''); if (!onlyDay) out.push(`— ${dayTitle(dt)} —`);
@@ -1140,6 +1154,7 @@ function tripHTML(t, onlyDay) {
   let h = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#221A26"><h2 style="margin:0 0 4px;font-family:Georgia,serif">${esc(onlyDay ? `${t.name} · ${dayTitle(fromISO(onlyDay))}` : t.name)}</h2>`;
   h += `<div style="${G2}">${onlyDay ? '' : esc(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)} · `)}Staying in ${esc(t.base.name)}</div>`;
   if (t.notes && !onlyDay) h += `<p>${esc(t.notes)}</p>`;
+  h += `<p style="margin:14px 0 4px"><a href="${esc(tripLink(t, onlyDay))}" style="display:inline-block;background:#7B1E3C;color:#ffffff;text-decoration:none;font-weight:bold;padding:10px 18px;border-radius:22px">📍 Open the full itinerary</a></p>`;
   tripDays(t, onlyDay).forEach(({ d, dt, stops }) => {
     if (!onlyDay) h += `<h3 style="margin:20px 0 4px;font-family:Georgia,serif">${esc(dayTitle(dt))}</h3>`;
     if (!stops.length) { h += '<p>No stops planned yet.</p>'; return; }
@@ -1166,14 +1181,29 @@ function shareTrip(tid, day) {
   const el = openSheet(`<h2>Share ${esc(day ? dayTitle(fromISO(day)) : t.name)}</h2>
     <div class="stack">
       <a class="btn block shopt" id="shEmail" href="${esc(mailHref)}">${svg('share')}<span style="text-align:left"><b>Email</b><br><span class="small muted" style="font-weight:400">Opens a new email with the full itinerary already in it</span></span></a>
-      <a class="btn block shopt" id="shRich" href="mailto:?subject=${esc(enc(title))}">${svg('share')}<span style="text-align:left"><b>Email with tappable links</b><br><span class="small muted" style="font-weight:400">Opens a blank email; long-press the body and Paste for a formatted version with tappable names</span></span></a>
+      <button class="btn block shopt" id="shRich">${svg('share')}<span style="text-align:left"><b>Email with tappable links</b><br><span class="small muted" style="font-weight:400">Formatted, with tappable winery names and Directions: two quick steps</span></span></button>
       <button class="btn block shopt" id="shMsg">${svg('share')}<span style="text-align:left"><b>Message, WhatsApp or other app</b><br><span class="small muted" style="font-weight:400">Share sheet: Gmail works here too</span></span></button>
       <button class="btn block shopt" id="shCopy">${svg('share')}<span style="text-align:left"><b>Copy text</b></span></button>
+      <a class="btn block shopt" href="${esc(tripLink(t, day || null))}" target="_blank" rel="noopener">${svg('share')}<span style="text-align:left"><b>Preview the itinerary page</b><br><span class="small muted" style="font-weight:400">What everyone sees from the link included in every option</span></span></a>
     </div><div class="foot"><button class="btn" onclick="closeSheet()">Cancel</button></div>`);
   const copyRich = () => { try { const p = navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([tripHTML(t, day || null)], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]); p.catch(() => navigator.clipboard.writeText(text).catch(() => {})); } catch (e) { try { navigator.clipboard.writeText(text).catch(() => {}); } catch (er) { /* ignore */ } } };
   // the link itself opens the mail app inside the tap (Chrome blocks delayed mailto); the copy runs alongside
   $('#shEmail', el).onclick = () => { if (mailHref.length < 300) copyRich(); setTimeout(closeSheet, 400); };
-  $('#shRich', el).onclick = () => { copyRich(); toast('Copied — long-press the email body and tap Paste'); setTimeout(closeSheet, 400); };
+  // step 1 copies while the app still has focus; step 2 is a real tap on a mail link
+  $('#shRich', el).onclick = async () => {
+    let ok = false;
+    try { await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([tripHTML(t, day || null)], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]); ok = true; } catch (e) { /* not allowed */ }
+    if (!ok) { toast('This phone only allows plain text here, so use Email instead'); return; }
+    closeSheet();
+    const s2 = openSheet(`<h2>Formatted itinerary copied ✓</h2>
+      <ol class="small" style="margin:6px 0 14px;padding-left:20px;line-height:1.6">
+        <li>Tap <b>Open email</b>.</li>
+        <li>In Gmail, <b>long-press</b> the empty body and tap <b>Paste</b>.</li>
+      </ol>
+      <p class="small muted" style="margin:0 0 14px">Use Gmail's own Paste, not the keyboard's clipboard button: the keyboard pastes plain text only.</p>
+      <div class="foot"><button class="btn" onclick="closeSheet()">Cancel</button><a class="btn primary" id="shOpen" href="mailto:?subject=${esc(enc(title))}">Open email</a></div>`);
+    $('#shOpen', s2).onclick = () => setTimeout(closeSheet, 400);
+  };
   $('#shMsg', el).onclick = async () => { closeSheet(); if (navigator.share) { try { await navigator.share({ title, text }); return; } catch (e) { if (e.name === 'AbortError') return; } } try { await navigator.clipboard.writeText(text); toast('Itinerary copied — paste it anywhere'); } catch (e) { toast('Sharing isn’t available here'); } };
   $('#shCopy', el).onclick = async () => { closeSheet(); try { await navigator.clipboard.writeText(text); toast('Itinerary copied'); } catch (e) { toast('Copy isn’t available here'); } };
 }
