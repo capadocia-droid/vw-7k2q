@@ -348,7 +348,8 @@ function nextOpening(all) {
 function paintRidges(root = document) { $$('canvas[data-ridge]', root).forEach(cv => { let col = cv.dataset.color; if (col.startsWith('var(')) col = getComputedStyle(document.documentElement).getPropertyValue(col.slice(4, -1)).trim(); drawRidges(cv, col, cv.dataset.ridge); }); }
 
 /* ---------------- LIST ---------------- */
-const F = { q: '', on: new Set(), region: '', coll: '', sort: 'guide' };
+const F = { q: '', on: new Set(), region: '', coll: '', sort: 'az' };
+const sortName = w => w.n.replace(/^The\s+/i, '');
 const FILTERS = [
   ['open', 'Open now', 'clock'], ['want', 'Want to go', 'heart'], ['visited', 'Visited', 'check'], ['unvisited', 'Not yet visited', 'mountain'],
   ['dog', 'Bravo welcome', 'dog'], ['kitchen', 'Food on site', 'fork'], ['picnic', 'Picnic OK', 'basket'], ['walkin', 'Walk-ins OK', 'walk']
@@ -372,7 +373,7 @@ function passes(w) {
 }
 function sorted(list) {
   const idx = id => ALL().findIndex(w => w.id === id);
-  const by = { guide: (a, b) => idx(a.id) - idx(b.id), near: (a, b) => distFromBase(a) - distFromBase(b), score: (a, b) => (score(b.id) ?? -1) - (score(a.id) ?? -1) || idx(a.id) - idx(b.id), az: (a, b) => a.n.localeCompare(b.n) };
+  const by = { guide: (a, b) => idx(a.id) - idx(b.id), near: (a, b) => distFromBase(a) - distFromBase(b), score: (a, b) => (score(b.id) ?? -1) - (score(a.id) ?? -1) || idx(a.id) - idx(b.id), az: (a, b) => sortName(a).localeCompare(sortName(b), 'en', { numeric: true, sensitivity: 'base' }) };
   return [...list].sort(by[F.sort] || by.guide);
 }
 function wIcons(w) {
@@ -401,7 +402,7 @@ function renderList() {
       </div>
       ${F.coll ? `<div class="row"><span class="chip claret">${esc(G.picks[F.coll].title)}</span><button class="linkbtn" data-act="coll" data-k="">Clear</button></div>` : ''}
       <div class="resultbar"><span id="count"></span>
-        <select id="sort" aria-label="Sort"><option value="guide">Guide order</option><option value="near">Nearest to ${esc(base().name.split(',')[0])}</option><option value="score">Our score</option><option value="az">A–Z</option></select></div>
+        <select id="sort" aria-label="Sort"><option value="az">A–Z</option><option value="near">Nearest to ${esc(base().name.split(',')[0])}</option><option value="score">Our score</option><option value="guide">Guide order</option></select></div>
       <div class="wlist" id="wl"></div>
     </div>`;
   $('#sort').value = F.sort;
@@ -412,7 +413,9 @@ function renderList() {
 function fillList() {
   const list = sorted(ALL().filter(passes));
   $('#count').textContent = `${list.length} of ${ALL().length} wineries`;
-  $('#wl').innerHTML = list.length ? list.map(wCard).join('') : '<div class="empty">No wineries match these filters.</div>';
+  if (!list.length) { $('#wl').innerHTML = '<div class="empty">No wineries match these filters.</div>'; return; }
+  if (F.sort !== 'az') { $('#wl').innerHTML = list.map(wCard).join(''); return; }
+  let last = ''; $('#wl').innerHTML = list.map(w => { const c = sortName(w).charAt(0).toUpperCase(); const L = /[A-Z]/.test(c) ? c : '#'; const head = L !== last ? `<div class="letter">${L}</div>` : ''; last = L; return head + wCard(w); }).join('');
 }
 
 /* ---------------- WINERY DETAIL ---------------- */
