@@ -317,7 +317,6 @@ function renderHome() {
       ${days > 0 ? `<div class="count"><b>${days}</b><span>day${days > 1 ? 's' : ''} to go</span></div>` : ''}</a>`;
   }
   const b = base(); const openNear = all.filter(w => openStatus(w).code === 'open').sort((x, y) => distFromBase(x) - distFromBase(y)).slice(0, 3);
-  const next = G.picks.next5;
   const recent = [...S.visits].sort((a, c) => (c.date || '').localeCompare(a.date || '')).slice(0, 3);
   view.innerHTML = `
     ${installEvt ? `<div class="card row" style="justify-content:space-between;margin-top:8px"><span class="small"><b>Install on your phone</b><br><span class="muted">Opens full-screen and works offline.</span></span><button class="btn primary" data-act="install">Install</button></div>` : ''}
@@ -330,8 +329,7 @@ function renderHome() {
     </div>
     <div class="section"><div class="section-head"><h3>Open now near ${esc(b.name.split(',')[0])}</h3><a href="#wineries" data-act="filter" data-f="open">See all</a></div>
       ${openNear.length ? `<div class="wlist">${openNear.map(wCard).join('')}</div>` : `<div class="empty">Nothing on the list is open right now. ${nextOpening(all)}</div>`}</div>
-    <div class="section"><div class="section-head"><h3>${esc(next.title)}</h3></div>
-      <div class="hcards">${next.ids.map((id, i) => { const w = W(id); return `<a class="card pick" href="#w-${id}"><span class="rank">${String(i + 1).padStart(2, '0')} · ${esc(w.town)}</span><h4>${esc(w.n)}</h4><p>${esc(next.notes[id])}</p>${isVisited(id) ? '<span class="chip open">' + svg('check') + 'Visited</span>' : ''}</a>`; }).join('')}</div></div>
+    ${recoSection()}
     <div class="section"><h3>Collections</h3><div class="collections">
       ${['added', 'glist', 'scenery', 'food', 'gems', 'bravo', 'plan'].map(k => `<a class="coll" href="#wineries" data-act="coll" data-k="${k}"><b>${esc(G.picks[k].title)}</b><span>${G.picks[k].ids.length} wineries</span></a>`).join('')}
       <a class="coll" href="#wineries" data-act="filter" data-f="want"><b>Our want-to-go list</b><span>${all.filter(w => st(w.id).status === 'want').length} saved</span></a>
@@ -340,6 +338,80 @@ function renderHome() {
       ${recent.length ? recent.map(visitCard).join('') : '<div class="empty">Log a visit from any winery page.</div>'}</div>
     <p class="small muted" style="margin-top:28px">Guide data: ${esc(G.edition)}. Hours are published schedules, not guarantees — confirm before you drive.</p>`;
   paintRidges();
+}
+/* ---------------- smart "next five" ---------------- */
+const TAG_RX = {
+  views: /view|panoram|vista|overlook|elevat|blue ridge|mountain(?!-facing architecture)|sunset/i,
+  intimate: /intimate|small|tiny|family-run|family-owned|owner|winemaker|personal/i,
+  historic: /historic|17\d\d|18\d\d|1903|jefferson|manor|farmhouse|heritage/i,
+  vines: /among the (grape)?vines|vine terrace|vineyard tables|over the vines|vineyard-facing|vineyard seating|in the vineyard/i,
+  water: /river|creek|pond|lake/i,
+  romantic: /romantic|elegant|refined|sophisticated/i,
+  architecture: /architect|barn|villa|tuscan|cave|pavilion/i,
+  firepit: /fire ?pit/i, music: /live music/i, brewery: /brew|beer|cider/i,
+  serious: /serious|thoughtful|craftsmanship|essential|wine-focused|terroir/i, relaxed: /relaxed|casual|unpretentious|laid-back|lively/i
+};
+const WINE_RX = ['cabernet franc', 'petit verdot', 'pinot noir', 'chardonnay', 'viognier', 'petit manseng', 'norton', 'nebbiolo', 'merlot', 'sparkling', 'rosé', 'albariño', 'tannat', 'meritage', 'bordeaux', 'gamay', 'riesling', 'roussanne', 'sauvignon blanc', 'cabernet sauvignon'];
+const tagCache = new Map();
+function tagsOf(w) {
+  if (tagCache.has(w.id)) return tagCache.get(w.id);
+  const text = [w.n, w.status, w.why, w.mine, w.food, (w.features || []).join(' '), (w.wines || []).join(' ')].join(' ');
+  const t = new Set(['r:' + w.region]);
+  for (const [k, rx] of Object.entries(TAG_RX)) if (rx.test(text)) t.add(k);
+  const wt = (w.wines || []).join(' ').toLowerCase(); WINE_RX.forEach(x => { if (wt.includes(x)) t.add('w:' + x); });
+  if (['kitchen'].includes(w.foodLevel)) t.add('food'); if (w.foodLevel === 'bring' || w.picnic) t.add('picnic');
+  if (w.resLevel === 'walkin') t.add('walkin'); if (w.adults) t.add('adults');
+  ['scenery', 'food', 'gems'].forEach(k => { if (inPick(k, w.id)) t.add('p:' + k); });
+  tagCache.set(w.id, t); return t;
+}
+const golds = w => (w.wines || []).filter(x => /gold|governor's cup|monticello cup|best in show/i.test(x)).length;
+function upcomingTrip() { const today = todayISO(); const t = S.trips.filter(x => x.end >= today).sort((a, b) => a.start.localeCompare(b.start))[0]; if (!t) return null; const days = (fromISO(t.start) - fromISO(today)) / 864e5; return days <= 75 ? t : null; }
+function recommend(n = 5) {
+  const all = ALL(); const visited = all.filter(w => isVisited(w.id));
+  // taste profile from what we've been to and how we scored it
+  let liked = visited.map(w => { const sc = score(w.id); const wt = sc != null ? Math.max(0.1, (sc - 55) / 40) : st(w.id).fav ? 0.9 : 0.65; return { w, wt }; });
+  if (!liked.length) liked = G.picks.next5.ids.map(id => ({ w: W(id), wt: 0.5 }));
+  const P = {}; liked.forEach(({ w, wt }) => tagsOf(w).forEach(t => (P[t] = (P[t] || 0) + wt)));
+  Object.entries(S.state).forEach(([id, s]) => Object.entries(s.wines || {}).forEach(([nm, x]) => { if (x.s >= 4) { const l = nm.toLowerCase(); WINE_RX.forEach(k => { if (l.includes(k)) P['w:' + k] = (P['w:' + k] || 0) + 0.4; }); } }));
+  const pNorm = Math.sqrt(Object.values(P).reduce((a, v) => a + v * v, 0)) || 1;
+  // context: upcoming trip (days + base) or the next seven days from home base
+  const trip = upcomingTrip(); const bp = trip ? [trip.base.lat, trip.base.lng] : [base().lat, base().lng];
+  const days = trip ? Object.keys(trip.days).sort().map(fromISO) : [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(12); d.setDate(d.getDate() + i); return d; });
+  const cand = all.filter(w => !isVisited(w.id)).map(w => {
+    const tg = tagsOf(w); let dot = 0; tg.forEach(t => (dot += P[t] || 0)); const sim = dot / (Math.sqrt(tg.size) * pNorm);
+    let best = null, bestJ = 0; liked.forEach(({ w: l }) => { const lt = tagsOf(l); let inter = 0; tg.forEach(t => lt.has(t) && inter++); const j = inter / (tg.size + lt.size - inter); if (j > bestJ) { bestJ = j; best = l; } });
+    const openDays = w.h ? days.filter(d => hoursOn(w, d).length) : null; const nOpen = openDays ? openDays.length : null;
+    const mi = roadMi(bp, pos(w)); const near = Math.max(0, 1 - mi / 90);
+    const g = golds(w); const gr = gR(w.id); const want = st(w.id).status === 'want';
+    const quality = Math.min(0.15, g * 0.035) + (gr ? Math.min(0.08, Math.max(0, gr[0] - 4.4) * 0.2) : 0) + (inPick('gems', w.id) ? 0.04 : 0) + (inPick('next5', w.id) ? 0.05 : 0);
+    const openScore = nOpen == null ? -0.05 : nOpen === 0 ? -0.4 : 0.22 * (nOpen / days.length) - (nOpen === 1 && days.length > 2 ? 0.1 : 0);
+    const total = 0.45 * sim + (want ? 0.25 : 0) + 0.25 * near + quality + openScore;
+    const reasons = [];
+    if (want) reasons.push('On our want list');
+    if (best && bestJ > 0.18) reasons.push('Like ' + best.n.replace(/ (Vineyards?|Winery|Cellars|Farm & Vineyards?|Vineyard & Winery|Vineyards & Winery|Family Wine|Estate Winery)\b.*$/, '').replace(/^The /, ''));
+    if (nOpen != null) { if (trip) reasons.push(nOpen === days.length ? 'Open every trip day' : nOpen ? `Open ${nOpen} of ${days.length} trip days` : 'Closed on our trip'); else if (nOpen) { const first = openDays[0]; const di = Math.round((first - days[0]) / 864e5); reasons.push(di === 0 ? 'Open today' : di === 1 ? 'Open tomorrow' : 'Open ' + DAYS3[first.getDay()]); } }
+    else reasons.push('Limited hours — check');
+    reasons.push(`${Math.round(mi)} mi`);
+    if (g >= 2) reasons.push(`${g} golds`); else if (gr && gr[0] >= 4.7) reasons.push(`Google ${gr[0]}`);
+    return { w, total, reasons, region: w.region };
+  });
+  // greedy pick with a variety penalty for repeating a region
+  const picked = [], used = {};
+  while (picked.length < n && cand.length) {
+    cand.forEach(c => (c.adj = c.total - (used[c.region] || 0) * 0.12));
+    cand.sort((a, b) => b.adj - a.adj); const c = cand.shift(); picked.push(c); used[c.region] = (used[c.region] || 0) + 1;
+  }
+  return { picked, trip };
+}
+const firstSentence = t => (t || '').split(/(?<=[.!?])\s/)[0];
+function recoSection() {
+  const { picked, trip } = recommend(5);
+  if (!picked.length) return '';
+  return `<div class="section"><div class="section-head"><h3>Up next for us</h3><span class="small muted">${trip ? 'For ' + esc(trip.name) : 'Next 7 days'}</span></div>
+    <span class="small muted" style="margin-top:-6px">Re-ranked from our visits, scores, want list, hours, and distance.</span>
+    <div class="hcards">${picked.map(({ w, reasons }, i) => `<a class="card pick" href="#w-${w.id}"><span class="rank">${String(i + 1).padStart(2, '0')} · ${esc(w.town)}</span><h4>${esc(w.n)}</h4>
+      <div class="chips">${reasons.slice(0, 4).map((r, k) => `<span class="chip ${k === 0 ? 'claret' : ''}">${esc(r)}</span>`).join('')}</div>
+      <p>${esc((G.picks.next5.notes || {})[w.id] || firstSentence(w.why) || '')}</p></a>`).join('')}</div></div>`;
 }
 function nextOpening(all) {
   const soon = all.map(w => ({ w, s: openStatus(w) })).filter(x => x.s.code === 'later');
