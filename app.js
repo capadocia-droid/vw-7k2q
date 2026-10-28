@@ -48,6 +48,7 @@ const P = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/>',
   mountain: '<path d="M3 20l6-10 4 6 3-4 5 8z"/>',
+  dots: '<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>',
   cloud: '<path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.3 4.4 4.4 0 0 0 7 18z"/>',
   users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/>',
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
@@ -248,7 +249,7 @@ function holiday(d) {
 }
 
 /* ---------------- UI primitives ---------------- */
-function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2300); }
+function toast(msg) { $$('.toast').forEach(x => x.remove()); const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2300); }
 let sheetStack = [];
 function openSheet(html, mount) {
   const bg = document.createElement('div'); bg.className = 'sheet-bg';
@@ -1014,25 +1015,33 @@ function tripSheet(tid) {
   });
 }
 const stopQ = w => { const c = S.kv.coords[w.id]; return c && c[2] === 'gps' ? `${c[0]},${c[1]}` : placeQ(w); };
+const smeta = (t, d, id) => ((t.meta || {})[d + '|' + id] || {});
+const fmtClock = v => { if (!v) return ''; const [h, m] = v.split(':').map(Number); return fmtT(h * 60 + m); };
 function renderTrip(tid) {
   const t = S.trips.find(x => x.id === tid); if (!t) { go('plan'); return; }
   setTop(t.name, { back: true, actions: `<button class="iconbtn" data-act="shareTrip" data-tid="${tid}" aria-label="Share trip">${svg('share')}</button><button class="iconbtn" data-act="editTrip" data-tid="${tid}" aria-label="Edit trip">${svg('edit')}</button>` });
   const bp = [t.base.lat, t.base.lng]; const used = new Set(Object.values(t.days).flat());
-  const days = Object.keys(t.days).sort().map(d => {
+  const keys = Object.keys(t.days).sort();
+  const days = keys.map((d, di) => {
     const dt = fromISO(d); const stops = t.days[d].map(W).filter(Boolean); const hol = holiday(dt);
     let prev = bp, total = 0;
     const rows = stops.map((w, i) => {
-      const p = pos(w); const mi = roadMi(prev, p); total += mi; prev = p; const hrs = hoursOn(w, dt);
+      const p = pos(w); const mi = roadMi(prev, p); total += mi; prev = p; const hrs = hoursOn(w, dt); const m = smeta(t, d, w.id);
       const hTxt = hrs ? (hrs.length ? fmtRange(hrs) : 'Closed this day') : (w.irregular ? 'Limited days — check calendar' : 'By reservation — check');
       const bad = hrs && !hrs.length;
+      const upOff = i === 0 && di === 0, downOff = i === stops.length - 1 && di === keys.length - 1;
+      const upLbl = i === 0 ? 'Move to previous day' : 'Move up', downLbl = i === stops.length - 1 ? 'Move to next day' : 'Move down';
       return `<div class="leg">↓ ${Math.round(mi)} mi · ~${fmtDrive(driveMin(mi))}</div>
-        <div class="stop"><span class="num">${i + 1}</span><div class="sb"><a href="#w-${w.id}">${esc(w.n)}</a><div class="small" style="color:var(${bad ? '--claret' : '--muted'})">${bad ? svg('warn', 'width="13" height="13" style="vertical-align:-2px"') + ' ' : ''}${esc(hTxt)}${w.resLevel === 'required' ? ' · reservation required' : ''}${w.dog === 'no' ? ' · no dogs' : ''}</div></div>
-        <div class="ctl"><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="-1" aria-label="Move up">${svg('up')}</button><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="1" aria-label="Move down">${svg('down')}</button><button data-act="rmStop" data-tid="${tid}" data-d="${d}" data-i="${i}" aria-label="Remove">${svg('x')}</button></div></div>`;
+        <div class="stop"><span class="num">${i + 1}</span><div class="sb"><a href="#w-${w.id}">${esc(w.n)}</a>
+          <div class="small" style="color:var(${bad ? '--claret' : '--muted'})">${m.time ? `<b style="color:var(--ink)">~${fmtClock(m.time)}</b> · ` : ''}${bad ? svg('warn', 'width="13" height="13" style="vertical-align:-2px"') + ' ' : ''}${esc(hTxt)}${w.resLevel === 'required' ? ' · reservation required' : ''}</div>
+          ${m.note ? `<div class="small" style="font-style:italic">${esc(m.note)}</div>` : ''}</div>
+        <div class="ctl"><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="-1" aria-label="${upLbl}" title="${upLbl}" ${upOff ? 'disabled' : ''}>${svg('up')}</button><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="1" aria-label="${downLbl}" title="${downLbl}" ${downOff ? 'disabled' : ''}>${svg('down')}</button><button data-act="editStop" data-tid="${tid}" data-d="${d}" data-i="${i}" aria-label="Edit stop">${svg('dots')}</button></div></div>`;
     }).join('');
     const back = stops.length ? roadMi(prev, bp) : 0; total += back;
-    const openList = ALL().filter(w => !used.has(w.id) && (w.h ? hoursOn(w, dt).length : false) && roadMi(bp, pos(w)) < 60)
-      .map(w => ({ w, pr: (st(w.id).status === 'want' ? 0 : 3) + (inPick('next5', w.id) ? 0 : 1) + (isVisited(w.id) ? 2 : 0) + roadMi(bp, pos(w)) / 40 }))
-      .sort((a, b) => a.pr - b.pr).slice(0, 4);
+    // suggestions: open that day, not visited yet, not already in this trip — nearest to the last stop (or to base when the day is empty)
+    const last = stops[stops.length - 1]; const ref = last ? pos(last) : bp; const refName = last ? shortName(last.n) : t.base.name.split(',')[0];
+    const openList = ALL().filter(w => !used.has(w.id) && !isVisited(w.id) && w.h && hoursOn(w, dt).length)
+      .map(w => ({ w, mi: roadMi(ref, pos(w)) })).sort((a, b) => a.mi - b.mi).slice(0, 4);
     const stopsQ = stops.map(stopQ); const baseQ = `${t.base.lat},${t.base.lng}`;
     const navDay = stops.length ? `https://www.google.com/maps/dir/?api=1&origin=${enc(baseQ)}&destination=${enc(baseQ)}&waypoints=${stopsQ.map(enc).join('%7C')}&travelmode=driving` : '';
     const embed = stops.length ? `https://maps.google.com/maps?saddr=${enc(baseQ)}&daddr=${stopsQ.map(enc).join('+to:')}+to:${enc(baseQ)}&output=embed` : '';
@@ -1040,41 +1049,93 @@ function renderTrip(tid) {
       <div class="card">${stops.length ? `<div class="small muted">From ${esc(t.base.name)}</div>${rows}<div class="leg">↓ ${Math.round(back)} mi back · day total ~${Math.round(total)} mi, ${fmtDrive(driveMin(total))} driving</div>` : '<div class="small muted">No stops yet.</div>'}
         <div class="row" style="margin-top:12px"><button class="btn" data-act="addStop" data-tid="${tid}" data-d="${d}">${svg('plus')}Add stop</button>${stops.length ? `<a class="btn primary" href="${navDay}" target="_blank" rel="noopener">${svg('nav')}Navigate day</a><button class="btn" data-act="showRoute" data-src="${esc(embed)}">${svg('route')}Route map</button><button class="btn" data-act="shareTrip" data-tid="${tid}" data-d="${d}">${svg('share')}Share day</button>` : ''}</div>
         <div class="routebox" data-rk="${tid}:${d}">${openMem['route:' + tid + ':' + d] && stops.length ? (navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${esc(embed)}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>') : ''}</div>
-        ${openList.length ? `<div style="margin-top:12px"><h3 style="margin-bottom:4px">Open this day nearby</h3>${openList.map(({ w }) => `<div class="sugg"><span><a href="#w-${w.id}" style="color:var(--ink);font-weight:600;text-decoration:none">${esc(w.n)}</a><br><span class="small muted">${fmtRange(hoursOn(w, dt))} · ${Math.round(roadMi(bp, pos(w)))} mi${st(w.id).status === 'want' ? ' · on our list' : ''}${isVisited(w.id) ? ' · visited' : ''}</span></span><button class="btn" data-act="quickAdd" data-tid="${tid}" data-d="${d}" data-id="${w.id}">${svg('plus')}Add</button></div>`).join('')}</div>` : ''}
+        ${openList.length ? `<div style="margin-top:14px"><h3 style="margin-bottom:2px">Open this day · not visited yet</h3><div class="small muted" style="margin-bottom:4px">Nearest to ${esc(refName)}</div>${openList.map(({ w, mi }) => `<div class="sugg"><span><a href="#w-${w.id}" style="color:var(--ink);font-weight:600;text-decoration:none">${esc(w.n)}</a><br><span class="small muted">${fmtRange(hoursOn(w, dt))} · ${Math.round(mi)} mi${st(w.id).status === 'want' ? ' · on our want list' : ''}${w.resLevel === 'required' ? ' · reservation required' : ''}</span></span><button class="btn" data-act="quickAdd" data-tid="${tid}" data-d="${d}" data-id="${w.id}">${svg('plus')}Add</button></div>`).join('')}</div>` : ''}
       </div></div>`;
   }).join('');
   view.innerHTML = `<div class="section" style="margin-top:8px"><div class="small muted">${fmtDate(t.start, true)} – ${fmtDate(t.end, true)}</div><div class="row"><span class="chip ridge">${svg('pin')}Base: ${esc(t.base.name)}</span></div>${t.notes ? `<p class="prose" style="margin:0">${esc(t.notes)}</p>` : ''}</div>${days}
     <div class="section"><button class="btn primary block" data-act="shareTrip" data-tid="${tid}">${svg('share')}Share this trip</button></div>
     <p class="small muted" style="margin-top:22px">Drive times are straight-line estimates. Tap “Navigate day” for real routes in Google Maps.</p>`;
 }
-function tripText(t, onlyDay) {
-  const baseQ = `${t.base.lat},${t.base.lng}`; const out = [];
-  out.push(onlyDay ? `${t.name} · ${fmtDate(onlyDay, true)}` : t.name);
-  if (!onlyDay) out.push(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)}`);
-  out.push(`Staying in ${t.base.name}`);
-  if (t.notes && !onlyDay) out.push(t.notes);
-  Object.keys(t.days).sort().filter(d => !onlyDay || d === onlyDay).forEach(d => {
-    const dt = fromISO(d); const stops = t.days[d].map(W).filter(Boolean); if (!stops.length && !onlyDay) return;
-    out.push(''); if (!onlyDay) out.push(`${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}${holiday(dt) ? ' (' + holiday(dt) + ')' : ''}`);
-    if (!stops.length) { out.push('No stops planned yet.'); return; }
-    let prev = [t.base.lat, t.base.lng];
-    stops.forEach((w, i) => {
-      const hrs = hoursOn(w, dt); const mi = roadMi(prev, pos(w)); prev = pos(w);
-      out.push(`${i + 1}. ${w.n} (${w.town}) · ${hrs ? (hrs.length ? fmtRange(hrs) : 'closed that day') : 'check hours'} · ~${fmtDrive(driveMin(mi))} drive`);
-      out.push(`   https://www.google.com/maps/search/?api=1&query=${enc(placeQ(w))}`);
-    });
-    out.push(`Full route: https://www.google.com/maps/dir/?api=1&origin=${enc(baseQ)}&destination=${enc(baseQ)}&waypoints=${stops.map(stopQ).map(enc).join('%7C')}&travelmode=driving`);
+async function moveStop(tid, d, i, dir) {
+  const t = S.trips.find(x => x.id === tid); const keys = Object.keys(t.days).sort(); const a = t.days[d]; const id = a[i]; const j = i + dir; const di = keys.indexOf(d);
+  t.meta = t.meta || {};
+  const carry = (from, to) => { const k1 = from + '|' + id, k2 = to + '|' + id; if (t.meta[k1]) { t.meta[k2] = t.meta[k1]; delete t.meta[k1]; } };
+  if (j >= 0 && j < a.length) { [a[i], a[j]] = [a[j], a[i]]; }
+  else if (dir < 0 && di > 0) { a.splice(i, 1); const pd = keys[di - 1]; t.days[pd].push(id); carry(d, pd); toast(`Moved to ${DAYS3[fromISO(pd).getDay()]} ${MONTHS[fromISO(pd).getMonth()]} ${fromISO(pd).getDate()}`); }
+  else if (dir > 0 && di < keys.length - 1) { a.splice(i, 1); const nd = keys[di + 1]; t.days[nd].unshift(id); carry(d, nd); toast(`Moved to ${DAYS3[fromISO(nd).getDay()]} ${MONTHS[fromISO(nd).getMonth()]} ${fromISO(nd).getDate()}`); }
+  else return;
+  await DB.put('trips', t); renderTrip(tid);
+}
+function editStopSheet(tid, d, i) {
+  const t = S.trips.find(x => x.id === tid); const id = t.days[d][i]; const w = W(id); const m = smeta(t, d, id); const keys = Object.keys(t.days).sort();
+  const el = openSheet(`<h2>${esc(w.n)}</h2><form class="stack" id="sf">
+    <label class="fld">Day<select id="sD">${keys.map(k => { const dt = fromISO(k); const h = hoursOn(w, dt); return `<option value="${k}" ${k === d ? 'selected' : ''}>${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()} — ${h ? (h.length ? fmtRange(h) : 'closed') : 'check hours'}</option>`; }).join('')}</select></label>
+    <label class="fld">Arrive around (optional)<input type="time" id="sT" value="${esc(m.time || '')}" step="900" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px"></label>
+    <label class="fld">Note (optional)<input type="text" id="sN" value="${esc(m.note || '')}" placeholder="e.g. Reserved porch table for 2"></label>
+    <div class="foot"><button type="button" class="btn" id="sRm">${svg('trash')}Remove stop</button><button type="submit" class="btn primary">Save</button></div></form>`);
+  $('#sRm', el).onclick = async () => { t.days[d].splice(i, 1); if (t.meta) delete t.meta[d + '|' + id]; await DB.put('trips', t); closeSheet(); renderTrip(tid); toast('Stop removed'); };
+  $('#sf', el).addEventListener('submit', async e => {
+    e.preventDefault(); t.meta = t.meta || {}; const nd = $('#sD', el).value; const meta = { time: $('#sT', el).value, note: $('#sN', el).value.trim() };
+    delete t.meta[d + '|' + id];
+    if (nd !== d) { t.days[d].splice(i, 1); if (!t.days[nd].includes(id)) t.days[nd].push(id); }
+    if (meta.time || meta.note) t.meta[nd + '|' + id] = meta;
+    await DB.put('trips', t); closeSheet(); renderTrip(tid); toast(nd !== d ? 'Stop moved' : 'Stop updated');
   });
-  if (!Object.values(t.days).some(a => a.length)) out.push('', 'No stops planned yet.');
+}
+/* sharing: email gets tappable link text; messages get one short route link per day */
+const mapsQ = w => `https://maps.google.com/?q=${enc(placeQ(w)).replace(/%20/g, '+')}`;
+function routeURL(t, stops) {
+  const b = t.base.name && t.base.name !== 'My location' ? t.base.name : `${t.base.lat},${t.base.lng}`;
+  return 'https://www.google.com/maps/dir/' + [b, ...stops.map(placeQ), b].map(x => enc(x).replace(/%20/g, '+').replace(/%2C/g, ',')).join('/');
+}
+function tripDays(t, onlyDay) { return Object.keys(t.days).sort().filter(d => !onlyDay || d === onlyDay).map(d => ({ d, dt: fromISO(d), stops: t.days[d].map(W).filter(Boolean) })).filter(x => x.stops.length || onlyDay); }
+const dayTitle = dt => `${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}${holiday(dt) ? ' (' + holiday(dt) + ')' : ''}`;
+const stopLine = (t, d, dt, w) => { const h = hoursOn(w, dt); const m = smeta(t, d, w.id); return `${w.n} (${w.town}) · ${h ? (h.length ? fmtRange(h) : 'closed that day') : 'check hours'}${m.time ? ' · arrive ~' + fmtClock(m.time) : ''}`; };
+function tripText(t, onlyDay) {
+  const out = [onlyDay ? `${t.name} · ${dayTitle(fromISO(onlyDay))}` : t.name];
+  if (!onlyDay) out.push(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)}`);
+  out.push(`Staying in ${t.base.name}`); if (t.notes && !onlyDay) out.push(t.notes);
+  const ds = tripDays(t, onlyDay);
+  ds.forEach(({ d, dt, stops }) => {
+    out.push(''); if (!onlyDay) out.push(dayTitle(dt));
+    if (!stops.length) { out.push('No stops planned yet.'); return; }
+    stops.forEach((w, i) => { out.push(`${i + 1}. ${stopLine(t, d, dt, w)}`); const m = smeta(t, d, w.id); if (m.note) out.push(`   ${m.note}`); });
+    out.push(`Route: ${routeURL(t, stops)}`);
+  });
+  if (!ds.length) out.push('', 'No stops planned yet.');
   out.push('', 'Hours are published schedules; confirm before you go.');
   return out.join('\n');
 }
-async function shareTrip(tid, day) {
-  const t = S.trips.find(x => x.id === tid); if (!t) return; const text = tripText(t, day || null);
-  const title = day ? `${t.name} · ${fmtDate(day)}` : t.name;
-  if (navigator.share) { try { await navigator.share({ title, text }); return; } catch (e) { if (e.name === 'AbortError') return; } }
-  try { await navigator.clipboard.writeText(text); toast('Itinerary copied — paste it anywhere'); }
-  catch (e) { openSheet(`<h2>Share ${esc(title)}</h2><p class="small muted" style="margin:-6px 0 10px">Copy the text below.</p><textarea style="min-height:320px" readonly>${esc(text)}</textarea><div class="foot"><button class="btn primary" onclick="closeSheet()">Done</button></div>`); }
+function tripHTML(t, onlyDay) {
+  const A = (href, txt) => `<a href="${esc(href)}" style="color:#7B1E3C">${esc(txt)}</a>`;
+  let h = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#221A26"><h2 style="margin:0 0 4px;font-family:Georgia,serif">${esc(onlyDay ? `${t.name} · ${dayTitle(fromISO(onlyDay))}` : t.name)}</h2>`;
+  h += `<div style="color:#665F70">${onlyDay ? '' : esc(`${fmtDate(t.start, true).replace(/, \d{4}$/, '')} – ${fmtDate(t.end, true)} · `)}Staying in ${esc(t.base.name)}</div>`;
+  if (t.notes && !onlyDay) h += `<p>${esc(t.notes)}</p>`;
+  tripDays(t, onlyDay).forEach(({ d, dt, stops }) => {
+    if (!onlyDay) h += `<h3 style="margin:18px 0 4px;font-family:Georgia,serif">${esc(dayTitle(dt))}</h3>`;
+    if (!stops.length) { h += '<p>No stops planned yet.</p>'; return; }
+    h += '<ol style="margin:4px 0 6px;padding-left:22px">' + stops.map(w => { const hr = hoursOn(w, dt); const m = smeta(t, d, w.id); return `<li style="margin:2px 0">${A(mapsQ(w), w.n)} <span style="color:#665F70">(${esc(w.town)}) · ${esc(hr ? (hr.length ? fmtRange(hr) : 'closed that day') : 'check hours')}${m.time ? ' · arrive ~' + esc(fmtClock(m.time)) : ''}</span>${m.note ? `<br><i>${esc(m.note)}</i>` : ''}</li>`; }).join('') + '</ol>';
+    h += `<div>${A(routeURL(t, stops), 'Directions for the day')}</div>`;
+  });
+  return h + '<p style="color:#665F70;font-size:13px;margin-top:18px">Hours are published schedules; confirm before you go.</p></div>';
+}
+function shareTrip(tid, day) {
+  const t = S.trips.find(x => x.id === tid); if (!t) return;
+  const title = day ? `${t.name} · ${fmtDate(day)}` : t.name; const text = tripText(t, day || null);
+  const el = openSheet(`<h2>Share ${esc(day ? dayTitle(fromISO(day)) : t.name)}</h2>
+    <div class="stack">
+      <button class="btn block shopt" id="shEmail">${svg('share')}<span style="text-align:left"><b>Email</b><br><span class="small muted" style="font-weight:400">Tappable winery names and “Directions” links, no long web addresses</span></span></button>
+      <button class="btn block shopt" id="shMsg">${svg('share')}<span style="text-align:left"><b>Message or WhatsApp</b><br><span class="small muted" style="font-weight:400">Plain text with one short route link per day</span></span></button>
+      <button class="btn block shopt" id="shCopy">${svg('share')}<span style="text-align:left"><b>Copy text</b></span></button>
+    </div><div class="foot"><button class="btn" onclick="closeSheet()">Cancel</button></div>`);
+  $('#shEmail', el).onclick = async () => {
+    try { await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([tripHTML(t, day || null)], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]); }
+    catch (e) { try { await navigator.clipboard.writeText(text); } catch (er) { /* ignore */ } }
+    closeSheet(); toast('Itinerary copied — paste it into the email body');
+    setTimeout(() => { location.href = `mailto:?subject=${enc(title)}`; }, 600);
+  };
+  $('#shMsg', el).onclick = async () => { closeSheet(); if (navigator.share) { try { await navigator.share({ title, text }); return; } catch (e) { if (e.name === 'AbortError') return; } } try { await navigator.clipboard.writeText(text); toast('Itinerary copied — paste it anywhere'); } catch (e) { toast('Sharing isn’t available here'); } };
+  $('#shCopy', el).onclick = async () => { closeSheet(); try { await navigator.clipboard.writeText(text); toast('Itinerary copied'); } catch (e) { toast('Copy isn’t available here'); } };
 }
 function stopSheet(tid, d) {
   const t = S.trips.find(x => x.id === tid); const dt = fromISO(d); const bp = [t.base.lat, t.base.lng];
@@ -1112,7 +1173,8 @@ async function renderPrefs() {
   <div class="section"><h3>Wineries</h3><div class="card stack"><span class="small muted">Found a new favorite? Add it and it gets the same journal, scorecard, and trip features.</span><div><button class="btn" data-act="addWinery">${svg('plus')}Add a winery</button></div>
     ${(() => { const hid = EVERY().filter(w => st(w.id).hidden).sort((a, b) => a.n.localeCompare(b.n)); return hid.length ? `<h3 style="margin-top:8px">Removed from our guide · ${hid.length}</h3>${hid.map(w => `<div class="sugg"><a href="#w-${w.id}" style="color:var(--ink);text-decoration:none"><b>${esc(w.n)}</b><br><span class="small muted">${esc(w.town)}</span></a><button class="btn" data-act="restoreW" data-id="${w.id}">Restore</button></div>`).join('')}` : ''; })()}</div></div>
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
-    <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>`;
+    <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
+  <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {
@@ -1409,7 +1471,8 @@ const ACT = {
   addStop: el => stopSheet(el.dataset.tid, el.dataset.d),
   quickAdd: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].push(el.dataset.id); await DB.put('trips', t); renderTrip(t.id); },
   rmStop: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); t.days[el.dataset.d].splice(+el.dataset.i, 1); await DB.put('trips', t); renderTrip(t.id); },
-  mvStop: async el => { const t = S.trips.find(x => x.id === el.dataset.tid); const a = t.days[el.dataset.d], i = +el.dataset.i, j = i + +el.dataset.dir; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; await DB.put('trips', t); renderTrip(t.id); },
+  editStop: el => editStopSheet(el.dataset.tid, el.dataset.d, +el.dataset.i),
+  mvStop: el => moveStop(el.dataset.tid, el.dataset.d, +el.dataset.i, +el.dataset.dir),
   showRoute: el => { const box = el.closest('.card').querySelector('.routebox'); const rk = 'route:' + box.dataset.rk; if (box.innerHTML) { box.innerHTML = ''; delete openMem[rk]; saveUI(); return; } openMem[rk] = true; saveUI(); box.innerHTML = navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${el.dataset.src}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>'; },
   baseFlint: async () => { S.kv.settings.base = { ...G.defaultBase }; await saveKV('settings'); toast('Base set to Flint Hill'); renderPrefs(); },
   baseGPS: async () => { try { const p = await getGPS(); S.kv.settings.base = { name: 'My location', lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base set to your location'); renderPrefs(); } catch (e) { toast('Location unavailable — allow location access'); } },
