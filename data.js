@@ -28,7 +28,7 @@ window.GUIDE = {
     plan:    { title: "Needs extra planning", ids: ["crimson-lane","lost-mountain","linden","granite-heights"] }
   },
   wineries: [
-  { id:"king-family", n:"King Family Vineyards", town:"Crozet", region:"cville", lat:38.0697, lng:-78.7425, visited:true, tier:"Founding favorite",
+  { id:"king-family", n:"King Family Vineyards", town:"Crozet", region:"cville", lat:38.0622239, lng:-78.7285612, visited:true, tier:"Founding favorite",
     status:"Personally visited — loved. Our benchmark for the complete winery experience.",
     hoursText:"Mon, Tue, Thu 10 AM–6:30 PM · Wed 10 AM–8:30 PM · Fri–Sun 10 AM–5:30 PM",
     h:"Mo,Tu,Th 10:00-18:30|We 10:00-20:30|Fr-Su 10:00-17:30",
@@ -42,7 +42,7 @@ window.GUIDE = {
     why:"The balance of excellent wine, exceptional landscape, and relaxed hospitality makes it one of our most important reference wineries.",
     url:"https://kingfamilyvineyards.com/tastings-tours/", urlLabel:"Tastings, tours, and hours" },
 
-  { id:"ducard", n:"DuCard Vineyards", town:"Etlan", region:"r231", lat:38.5195, lng:-78.2830, visited:true, tier:"Founding favorite",
+  { id:"ducard", n:"DuCard Vineyards", town:"Etlan", region:"r231", lat:38.512719, lng:-78.304791, visited:true, tier:"Founding favorite",
     status:"Personally visited — loved. Our benchmark for an authentic, intimate mountain winery.",
     hoursText:"Mon–Thu noon–5 PM · Fri noon–9 PM (May–Oct) or noon–6 PM (Nov–Apr) · Sat–Sun noon–6 PM · Selected second Saturdays until 9 PM",
     h:"Mo-Th 12:00-17:00|Fr 12:00-21:00|Sa,Su 12:00-18:00",
@@ -75,7 +75,7 @@ window.GUIDE = {
       ],
       note:"Mixed flight ($32) = the four wines marked “in the mixed flight”. By the glass $14, premium $18. Wine club discounts apply." } },
 
-  { id:"chester-gap", n:"Chester Gap Cellars", town:"Front Royal", region:"shen", lat:38.8590, lng:-78.1390, visited:true, tier:"Founding favorite",
+  { id:"chester-gap", n:"Chester Gap Cellars", town:"Front Royal", region:"shen", lat:38.862243, lng:-78.1313709, visited:true, tier:"Founding favorite",
     status:"Personally visited — loved, especially for its spectacular views.",
     hoursText:"Thu–Sun 11 AM–6 PM (Thursday seasonal) · Last call 5:30 PM",
     h:"Th-Su 11:00-18:00",
@@ -88,7 +88,7 @@ window.GUIDE = {
     mine:"Some of the most dramatic scenery of any Virginia winery we've visited. The wines impressed, although slightly less consistent than King Family and DuCard.",
     url:"https://www.chestergapcellars.com/location", urlLabel:"Visiting information" },
 
-  { id:"three-fox", n:"Three Fox Vineyards & Brewery", town:"Delaplane", region:"shen", lat:38.9005, lng:-77.9660, visited:true, visitDate:"2026-10-24", tier:"Founding favorite",
+  { id:"three-fox", n:"Three Fox Vineyards & Brewery", town:"Delaplane", region:"shen", lat:38.91621, lng:-77.925939, visited:true, visitDate:"2026-10-24", tier:"Founding favorite",
     status:"Personally visited October 24 — loved.",
     hoursText:"Thu 2–8 PM · Fri noon–8 PM · Sat 11 AM–8 PM (one page lists earlier — confirm) · Sun noon–6 PM",
     h:"Th 14:00-20:00|Fr 12:00-20:00|Sa 11:00-20:00|Su 12:00-18:00",
@@ -101,7 +101,7 @@ window.GUIDE = {
     mine:"The vineyard-side tables and wood-fired pizzas created an outstanding experience. Now our benchmark for immersive vineyard seating and memorable casual food.",
     url:"https://www.threefoxvineyards.com/", urlLabel:"Winery, brewery, and hours" },
 
-  { id:"crimson-lane", n:"Crimson Lane Vineyards", town:"Linden", region:"shen", lat:38.9170, lng:-78.0900, tier:"Northern Virginia premier",
+  { id:"crimson-lane", n:"Crimson Lane Vineyards", town:"Linden", region:"shen", lat:38.91584, lng:-78.06211, tier:"Northern Virginia premier",
     status:"Research favorite; high priority for a special occasion.",
     hoursText:"Thu–Fri noon–5 PM · Sat–Sun 11 AM–6 PM",
     h:"Th,Fr 12:00-17:00|Sa,Su 11:00-18:00",
@@ -156,7 +156,7 @@ window.GUIDE = {
       ],
       note:"Gluten-free and non-alcoholic options available — ask your tasting associate." } },
 
-  { id:"bluemont", n:"Bluemont Vineyard", town:"Bluemont", region:"loud", lat:39.1085, lng:-77.8340, tier:"Northern Virginia premier",
+  { id:"bluemont", n:"Bluemont Vineyard", town:"Bluemont", region:"loud", lat:39.1010544, lng:-77.8253304, tier:"Northern Virginia premier",
     hoursText:"951 Tasting Room: Sun–Thu 11 AM–7 PM · Fri–Sat 11 AM–8 PM (some pages list later)",
     h:"Su-Th 11:00-19:00|Fr,Sa 11:00-20:00",
     flights:["Wine flights and tasting experiences — selections and prices vary"],
@@ -168,7 +168,7 @@ window.GUIDE = {
     why:"A must-visit for scenery, although its popularity may make it feel busier and more commercial than Chester Gap.",
     url:"https://www.bluemontvineyard.com/contact-intro", urlLabel:"Hours and visitor FAQ" },
 
-  { id:"linden", n:"Linden Vineyards", town:"Linden", region:"shen", lat:38.9142, lng:-78.0570, tier:"Northern Virginia premier",
+  { id:"linden", n:"Linden Vineyards", town:"Linden", region:"shen", lat:38.88064, lng:-78.072001, tier:"Northern Virginia premier",
     hoursText:"Fri–Sun 11 AM–5 PM · Mon–Thu closed (per Google Maps, Oct 2026) · book a tasting ahead",
     h:"Fr-Su 11:00-17:00",
     flights:["Educational, guided, seasonal tastings — about $30, often comparing vintages and terroir"],
@@ -180,7 +180,7 @@ window.GUIDE = {
     why:"One of Virginia's essential wineries for serious wine enthusiasts — a deliberately more structured experience than Three Fox or DuCard.",
     url:"https://www.lindenvineyards.com/reserve", urlLabel:"Tasting policy and reservations" },
 
-  { id:"delaplane-cellars", n:"Delaplane Cellars", town:"Delaplane", region:"shen", lat:38.9260, lng:-77.9050, tier:"Northern Virginia premier",
+  { id:"delaplane-cellars", n:"Delaplane Cellars", town:"Delaplane", region:"shen", lat:38.950148, lng:-77.936665, tier:"Northern Virginia premier",
     hoursText:"Mon & Thu 11 AM–5 PM · Fri–Sun 11 AM–6 PM · Tue–Wed closed",
     h:"Mo,Th 11:00-17:00|Fr-Su 11:00-18:00",
     flights:["Four-wine self-guided tasting — $25","Hosted five-wine guided tasting"],
@@ -196,7 +196,7 @@ window.GUIDE = {
         { n:"Aitheras", d:"Wine 1" }, { n:"Sauvignon Blanc", d:"Wine 2" }, { n:"Viognier", d:"Wine 3" }, { n:"Petit Manseng", d:"Wine 4" } ]} ],
       note:"Four-wine self-guided tasting — $25 per the guide; selections rotate." } },
 
-  { id:"stone-tower", n:"Stone Tower Winery", town:"Leesburg", region:"loud", lat:39.0815, lng:-77.6655, tier:"Tier 1",
+  { id:"stone-tower", n:"Stone Tower Winery", town:"Leesburg", region:"loud", lat:39.063064, lng:-77.635397, tier:"Tier 1",
     hoursText:"Thu–Mon 11 AM–6 PM · Tue–Wed closed",
     h:"Th-Mo 11:00-18:00",
     flights:["Guided five-wine tasting — about $25","Winery tours and specialty experiences"],
@@ -220,7 +220,7 @@ window.GUIDE = {
     why:"A destination for the seriousness and sophistication of the wines. Less suited to a spontaneous, informal afternoon.",
     url:"https://lostmountainvineyards.com/visit/", urlLabel:"Visit information" },
 
-  { id:"breaux", n:"Breaux Vineyards", town:"Purcellville", region:"loud", lat:39.2620, lng:-77.7240, tier:"Tier 1",
+  { id:"breaux", n:"Breaux Vineyards", town:"Purcellville", region:"loud", lat:39.2310066, lng:-77.7270377, tier:"Tier 1",
     hoursText:"Daily 11 AM–6 PM",
     h:"Su-Sa 11:00-18:00",
     flights:["Four-wine flights and guided tastings — pricing and selection change"],
@@ -232,7 +232,7 @@ window.GUIDE = {
     why:"A strong all-around estate, especially for a leisurely afternoon with extensive vineyard scenery.",
     url:"https://www.breauxvineyards.com/section/visiting-breaux/", urlLabel:"Visiting Breaux", menuUrl:"https://www.breauxvineyards.com/menus/" },
 
-  { id:"walsh", n:"Walsh Family Wine", town:"Purcellville", region:"loud", lat:39.2050, lng:-77.6900, tier:"Tier 1",
+  { id:"walsh", n:"Walsh Family Wine", town:"Purcellville", region:"loud", lat:39.173889, lng:-77.725546, tier:"Tier 1",
     hoursText:"Daily noon–6 PM · Fridays until 8 PM",
     h:"Sa-Th 12:00-18:00|Fr 12:00-20:00",
     flights:["Rotating four-wine self-guided flights"],
@@ -244,7 +244,7 @@ window.GUIDE = {
     why:"One of the most promising choices for someone who appreciated DuCard's serious wine program without pretension.",
     url:"https://www.walshfamilywine.com/reservation/", urlLabel:"Tastings, reservations, and hours" },
 
-  { id:"greenhill", n:"Greenhill Vineyards", town:"Middleburg", region:"hunt", lat:38.9636, lng:-77.7650, tier:"Tier 1",
+  { id:"greenhill", n:"Greenhill Vineyards", town:"Middleburg", region:"hunt", lat:38.968006, lng:-77.704994, tier:"Tier 1",
     hoursText:"Daily noon–6 PM",
     h:"Su-Sa 12:00-18:00",
     flights:["Staff-led tastings — current fees and selections need confirmation"],
@@ -256,7 +256,7 @@ window.GUIDE = {
     why:"A beautiful option for a peaceful and romantic adult wine outing.",
     url:"https://experiencegreenhill.com/visit/", urlLabel:"Hours and policies" },
 
-  { id:"capstone", n:"Capstone Vineyards", town:"Linden", region:"shen", lat:38.9030, lng:-78.0450, tier:"Tier 1",
+  { id:"capstone", n:"Capstone Vineyards", town:"Linden", region:"shen", lat:38.9152, lng:-78.0605, tier:"Tier 1",
     hoursText:"Thu, Sun, Mon noon–5 PM · Fri–Sat noon–6 PM · Tue–Wed by special arrangement",
     h:"Th,Su,Mo 12:00-17:00|Fr,Sa 12:00-18:00",
     flights:["Guided four-wine tasting — $25"],
@@ -268,7 +268,7 @@ window.GUIDE = {
     why:"One of our highest-priority undiscovered gems. Small, personal, scenic, and wine-focused — promising given our love of DuCard.",
     url:"https://capstonevineyards.com/our-tasting-room", urlLabel:"Tastings and hours" },
 
-  { id:"50-west", n:"50 West Vineyards", town:"Middleburg", region:"hunt", lat:38.9730, lng:-77.6650, tier:"Tier 1",
+  { id:"50-west", n:"50 West Vineyards", town:"Middleburg", region:"hunt", lat:38.981214, lng:-77.658288, tier:"Tier 1",
     hoursText:"Mon & Thu noon–5 PM · Fri noon–8 PM · Sat 11 AM–8 PM · Sun 11 AM–6 PM (some pages show shorter evenings)",
     h:"Mo,Th 12:00-17:00|Fr 12:00-20:00|Sa 11:00-20:00|Su 11:00-18:00",
     flights:["Guided tastings and flights — confirm current fee and format"],
@@ -280,7 +280,7 @@ window.GUIDE = {
     why:"A compelling alternative to more formal Middleburg estates, particularly for a quieter outdoor experience.",
     url:"https://www.50westvineyards.com/Visit", urlLabel:"Visit and policies" },
 
-  { id:"cana", n:"Cana Vineyards & Winery", town:"Middleburg", region:"hunt", lat:38.9683, lng:-77.6930, tier:"Tier 1",
+  { id:"cana", n:"Cana Vineyards & Winery", town:"Middleburg", region:"hunt", lat:38.9785005, lng:-77.6686666, tier:"Tier 1",
     hoursText:"Mon, Thu, Fri, Sun noon–6 PM · Sat 11 AM–6 PM · Tue–Wed closed",
     h:"Mo,Th,Fr,Su 12:00-18:00|Sa 11:00-18:00",
     flights:["Self-guided three-wine flights — about $12","Hosted tastings may require reservations"],
@@ -292,7 +292,7 @@ window.GUIDE = {
     why:"A strong candidate for the mix of wine, scenery, and casual food that made Three Fox memorable.",
     url:"https://canavineyards.com/visit/", urlLabel:"Visiting information" },
 
-  { id:"granite-heights", n:"Granite Heights Winery", town:"Warrenton", region:"shen", lat:38.6500, lng:-77.7650, tier:"Smaller estate",
+  { id:"granite-heights", n:"Granite Heights Winery", town:"Warrenton", region:"shen", lat:38.637308, lng:-77.843243, tier:"Smaller estate",
     hoursText:"Limited: generally the first two weekends of each month, Apr–Dec, noon–5 PM; selected Fridays May–Oct. Check the calendar.",
     h:"", irregular:true,
     flights:["Usually six wines — $14","Wine flights and bottle service"],
@@ -304,7 +304,7 @@ window.GUIDE = {
     why:"An excellent under-the-radar winery for wine quality rather than grand scenery.",
     url:"https://gh.wine/your-visit", urlLabel:"Tasting information" },
 
-  { id:"boxwood", n:"Boxwood Estate Winery", town:"Middleburg", region:"hunt", lat:38.9480, lng:-77.7450, tier:"Smaller estate",
+  { id:"boxwood", n:"Boxwood Estate Winery", town:"Middleburg", region:"hunt", lat:38.9544145, lng:-77.7466085, tier:"Smaller estate",
     hoursText:"Wed–Sun 11 AM–6 PM",
     h:"We-Su 11:00-18:00",
     flights:["Classic four-pour flight — about $18","Premium flight — about $24","Guided tastings and wine-cave experiences"],
@@ -316,7 +316,7 @@ window.GUIDE = {
     why:"More interesting for sophisticated winemaking and architecture than dramatic mountain panoramas.",
     url:"https://boxwoodwinery.com/visit/", urlLabel:"Experiences and policies" },
 
-  { id:"chrysalis", n:"Chrysalis Vineyards", town:"Middleburg", region:"hunt", lat:38.9720, lng:-77.6720, tier:"Smaller estate",
+  { id:"chrysalis", n:"Chrysalis Vineyards", town:"Middleburg", region:"hunt", lat:38.9582623, lng:-77.6732221, tier:"Smaller estate",
     hoursText:"Mon–Thu noon–6 PM · Fri–Sat noon–8 PM · Sun noon–7 PM",
     h:"Mo-Th 12:00-18:00|Fr,Sa 12:00-20:00|Su 12:00-19:00",
     flights:["Guided tastings daily","Self-guided flights of four 1.5-oz pours"],
@@ -328,7 +328,7 @@ window.GUIDE = {
     why:"One of the more compelling food-and-wine combinations in Loudoun County, especially if you're curious about Norton.",
     url:"https://www.chrysaliswine.com/FAQ", urlLabel:"Tastings, kitchen, and policies" },
 
-  { id:"sunset-hills", n:"Sunset Hills Vineyard", town:"Purcellville", region:"loud", lat:39.1720, lng:-77.6930, tier:"Smaller estate",
+  { id:"sunset-hills", n:"Sunset Hills Vineyard", town:"Purcellville", region:"loud", lat:39.179192, lng:-77.677631, tier:"Smaller estate",
     hoursText:"Mon–Thu noon–5 PM · Fri noon–6 PM · Sat 11 AM–8 PM · Sun 11 AM–6 PM",
     h:"Mo-Th 12:00-17:00|Fr 12:00-18:00|Sa 11:00-20:00|Su 11:00-18:00",
     flights:["Guided tastings and flights — check the current tasting menu"],
@@ -340,7 +340,7 @@ window.GUIDE = {
     why:"A beautiful historic atmosphere, especially appealing in autumn or for a cozy winter tasting.",
     url:"https://www.sunsethillsvineyard.com/Your-Visit", urlLabel:"Reservations and policies" },
 
-  { id:"la-grange", n:"The Winery at La Grange", town:"Haymarket", region:"hunt", lat:38.8460, lng:-77.6740, tier:"Smaller estate",
+  { id:"la-grange", n:"The Winery at La Grange", town:"Haymarket", region:"hunt", lat:38.851285, lng:-77.686583, tier:"Smaller estate",
     hoursText:"Typically Sun–Thu noon–6 PM · Fri–Sat noon–8 PM",
     h:"Su-Th 12:00-18:00|Fr,Sa 12:00-20:00",
     flights:["Guided six-wine tasting — $20 per person for reserved groups of seven or more"],
@@ -352,7 +352,7 @@ window.GUIDE = {
     why:"A worthwhile combination of Virginia history, landscaped grounds, and good wines.",
     url:"https://wineryatlagrange.com/reservations", urlLabel:"Tastings and reservations" },
 
-  { id:"glen-manor", n:"Glen Manor Vineyards", town:"Front Royal", region:"shen", lat:38.8350, lng:-78.2310, tier:"Smaller estate",
+  { id:"glen-manor", n:"Glen Manor Vineyards", town:"Front Royal", region:"shen", lat:38.840197, lng:-78.228299, tier:"Smaller estate",
     status:"Hidden-gem priority.",
     hoursText:"Wed–Sun 11 AM–5 PM",
     h:"We-Su 11:00-17:00",
@@ -366,7 +366,7 @@ window.GUIDE = {
     why:"Given our enthusiasm for Chester Gap and DuCard, possibly the most promising unvisited winery in the guide.",
     url:"https://glenmanorvineyards.com/visit/", urlLabel:"Tastings, tours, and policies" },
 
-  { id:"slater-run", n:"Slater Run Vineyards", town:"Upperville", region:"hunt", lat:38.9900, lng:-77.8540, tier:"Smaller estate",
+  { id:"slater-run", n:"Slater Run Vineyards", town:"Upperville", region:"hunt", lat:38.972934, lng:-77.832232, tier:"Smaller estate",
     hoursText:"Mon & Thu 11 AM–5 PM · Fri–Sun 11 AM–6 PM",
     h:"Mo,Th 11:00-17:00|Fr-Su 11:00-18:00",
     flights:["Curated flights","Guided tastings","Private educational experiences"],
@@ -378,7 +378,7 @@ window.GUIDE = {
     why:"A sophisticated countryside alternative to Crimson Lane, for quality wines and attentive service.",
     url:"https://www.slaterrun.com/tasting-room/", urlLabel:"Tastings, menus, and hours" },
 
-  { id:"pippin-hill", n:"Pippin Hill Farm & Vineyards", town:"North Garden", region:"cville", lat:37.9550, lng:-78.6440, tier:"Monticello",
+  { id:"pippin-hill", n:"Pippin Hill Farm & Vineyards", town:"North Garden", region:"cville", lat:37.960776, lng:-78.65969, tier:"Monticello",
     status:"One of our highest-priority unvisited destinations.",
     hoursText:"Tue–Sun 11 AM–5 PM · Early closures possible for events",
     h:"Tu-Su 11:00-17:00",
@@ -391,7 +391,7 @@ window.GUIDE = {
     why:"Probably the most compelling mix of beautiful vineyard setting and sophisticated food among our unvisited candidates.",
     url:"https://www.pippinhillfarm.com/visit-us/", urlLabel:"Visits, dining, and reservations" },
 
-  { id:"barboursville", n:"Barboursville Vineyards", town:"Barboursville", region:"cville", lat:38.1735, lng:-78.2830, tier:"Monticello",
+  { id:"barboursville", n:"Barboursville Vineyards", town:"Barboursville", region:"cville", lat:38.1596109, lng:-78.2773526, tier:"Monticello",
     status:"Essential wine-and-history destination.",
     hoursText:"Discovery tastings: Mon–Fri 10:30 AM–5:30 PM · Sat 10:30 AM–6 PM · Sun 11 AM–5 PM. Library 1821: Sat–Thu 11 AM–5 PM · Fri noon–7 PM",
     h:"Mo-Fr 10:30-17:30|Sa 10:30-18:00|Su 11:00-17:00",
@@ -404,7 +404,7 @@ window.GUIDE = {
     why:"Arguably our strongest destination for excellent wine, history, and exceptional food together.",
     url:"https://www.bbvwine.com/tour-tasting", urlLabel:"Tasting rooms and experiences" },
 
-  { id:"veritas", n:"Veritas Vineyard & Winery", town:"Afton", region:"cville", lat:37.9600, lng:-78.8520, tier:"Monticello",
+  { id:"veritas", n:"Veritas Vineyard & Winery", town:"Afton", region:"cville", lat:38.015325, lng:-78.836323, tier:"Monticello",
     hoursText:"Daily 11 AM–5 PM",
     h:"Su-Sa 11:00-17:00",
     flights:["Wine flights and hosted tastings — verify selection and fees"],
@@ -416,7 +416,7 @@ window.GUIDE = {
     why:"A natural next choice after King Family, with beautiful mountain scenery and a polished visitor experience.",
     url:"https://veritaswines.com/visit", urlLabel:"Experiences, dining, and reservations" },
 
-  { id:"early-mountain", n:"Early Mountain Vineyards", town:"Madison", region:"r231", lat:38.3880, lng:-78.3130, tier:"Route 231",
+  { id:"early-mountain", n:"Early Mountain Vineyards", town:"Madison", region:"r231", lat:38.35214, lng:-78.310267, tier:"Route 231",
     status:"Highest-priority Route 231 destination.",
     hoursText:"Thu–Mon 11 AM–5:30 PM · Fridays until 8 PM",
     h:"Th,Sa,Su,Mo 11:00-17:30|Fr 11:00-20:00",
@@ -429,7 +429,7 @@ window.GUIDE = {
     why:"Very likely to suit us: quality wine and scenery with a more elaborate culinary program.",
     url:"https://www.earlymountain.com/visit-us", urlLabel:"Tasting and restaurant information" },
 
-  { id:"pollak", n:"Pollak Vineyards", town:"Greenwood", region:"cville", lat:38.0430, lng:-78.7710, tier:"Monticello",
+  { id:"pollak", n:"Pollak Vineyards", town:"Greenwood", region:"cville", lat:38.034531, lng:-78.794458, tier:"Monticello",
     hoursText:"Wed–Mon 11 AM–5 PM",
     h:"We-Mo 11:00-17:00",
     flights:["Guided estate-wine tastings","Seasonal educational and wine-club experiences — flight pricing not clearly published"],
@@ -453,7 +453,7 @@ window.GUIDE = {
     why:"A particularly appealing mix of historic architecture and accomplished winemaking.",
     url:"https://www.smvwines.com/visit-us", urlLabel:"Tasting barn, dining, and reservations" },
 
-  { id:"hazy-mountain", n:"Hazy Mountain Vineyards", town:"Afton", region:"cville", lat:37.9330, lng:-78.8710, tier:"Monticello",
+  { id:"hazy-mountain", n:"Hazy Mountain Vineyards", town:"Afton", region:"cville", lat:38.019608, lng:-78.808338, tier:"Monticello",
     hoursText:"Sun–Thu 11 AM–7 PM · Fri–Sat 11 AM–9 PM",
     h:"Su-Th 11:00-19:00|Fr,Sa 11:00-21:00",
     flights:["Guided wine tastings","Seated wine and beer flights"],
@@ -465,7 +465,7 @@ window.GUIDE = {
     why:"Potentially one of the most spectacular architectural and panoramic experiences, though more elaborate than DuCard.",
     url:"https://www.hazy-mountain.com/faqs", urlLabel:"Hours, food, flights, and dogs" },
 
-  { id:"valley-road", n:"Valley Road Vineyards", town:"Afton", region:"cville", lat:37.9690, lng:-78.8570, tier:"Monticello",
+  { id:"valley-road", n:"Valley Road Vineyards", town:"Afton", region:"cville", lat:38.021343, lng:-78.821591, tier:"Monticello",
     hoursText:"Typically Mon–Fri noon–5:30 PM · Sat–Sun 10:30 AM–5:30 PM",
     h:"Mo-Fr 12:00-17:30|Sa,Su 10:30-17:30",
     flights:["Self-guided wine flights","Reserved guided tastings"],
@@ -489,7 +489,7 @@ window.GUIDE = {
     why:"One of the most interesting potential discoveries given our love of Three Fox. The elevated terrace over the vineyard sounds promising.",
     url:"https://www.merriemillfarm.com/visit-us", urlLabel:"Tastings, food, terrace, and reservations" },
 
-  { id:"revalation", n:"Revalation Vineyards", town:"Madison", region:"r231", lat:38.4200, lng:-78.2450, tier:"Route 231",
+  { id:"revalation", n:"Revalation Vineyards", town:"Madison", region:"r231", lat:38.439137, lng:-78.233196, tier:"Route 231",
     hoursText:"Jun–Oct: Thu, Sun, Mon noon–5 PM · Fri noon–sunset · Sat noon–7 PM. Nov–May: Fri noon–sunset · Sat noon–6 PM · Sun noon–5 PM; Mon & Thu by appointment.",
     h:"Th,Su,Mo 12:00-17:00|Fr 12:00-19:30|Sa 12:00-19:00",
     seasons:[{ m:[11,12,1,2,3,4,5], h:"Fr 12:00-17:00|Sa 12:00-18:00|Su 12:00-17:00" }],
@@ -502,7 +502,7 @@ window.GUIDE = {
     why:"A potentially excellent overlooked stop for an intimate, peaceful afternoon on the Route 231 corridor.",
     url:"https://revalationvineyards.com/visiting/", urlLabel:"Hours and policies" },
 
-  { id:"blue-quartz", n:"Blue Quartz Winery", aka:"with Shotwell Run Brewing", town:"Etlan", region:"r231", lat:38.5280, lng:-78.2580, tier:"Route 231",
+  { id:"blue-quartz", n:"Blue Quartz Winery", aka:"with Shotwell Run Brewing", town:"Etlan", region:"r231", lat:38.492879, lng:-78.283094, tier:"Route 231",
     hoursText:"Typically Mon & Thu noon–7 PM · Fri–Sat noon–9 PM · Sun 11 AM–7 PM · Tue–Wed closed",
     h:"Mo,Th 12:00-19:00|Fr,Sa 12:00-21:00|Su 11:00-19:00",
     flights:["Wine flights","Craft beer flights","Cider flights"],
@@ -514,7 +514,7 @@ window.GUIDE = {
     why:"A strong contender for scenery and relaxed hospitality, with food, wine, and beer together.",
     url:"https://www.bluequartzwinery.com/faqs", urlLabel:"Food, flights, and dog policies" },
 
-  { id:"afton-mountain", n:"Afton Mountain Vineyards", town:"Afton", region:"cville", lat:37.9320, lng:-78.8650, tier:"Monticello alternative",
+  { id:"afton-mountain", n:"Afton Mountain Vineyards", town:"Afton", region:"cville", lat:38.008228, lng:-78.851616, tier:"Monticello alternative",
     hoursText:"Sun, Mon, Thu 11 AM–5 PM · Fri–Sat 11 AM–6 PM (Nov–Feb) or 11 AM–7:30 PM (Mar–Oct)",
     h:"Su,Mo,Th 11:00-17:00|Fr,Sa 11:00-19:30",
     seasons:[{ m:[11,12,1,2], h:"Su,Mo,Th 11:00-17:00|Fr,Sa 11:00-18:00" }],
@@ -527,7 +527,7 @@ window.GUIDE = {
     why:"Deserves to move higher on our list for a visit with Bravo: mountain views, welcoming outdoor spaces, and a generous dog policy.",
     url:"https://www.aftonmountainvineyards.com/policies/", urlLabel:"Tasting, food, and pet policies" },
 
-  { id:"michael-shaps", n:"Michael Shaps Winery", town:"Charlottesville", region:"cville", lat:37.9900, lng:-78.4800, tier:"Monticello alternative",
+  { id:"michael-shaps", n:"Michael Shaps Winery", town:"Charlottesville", region:"cville", lat:37.892796, lng:-78.55686, tier:"Monticello alternative",
     hoursText:"Daily 11 AM–5 PM",
     h:"Su-Sa 11:00-17:00",
     flights:["Standard and premium selections — confirm current pricing"],
@@ -539,7 +539,7 @@ window.GUIDE = {
     why:"Notable more for the quality and craftsmanship of its wines than for scenery. A priority on a wine-focused day.",
     url:"https://www.virginiawineworks.com/michael-shaps-winery/", urlLabel:"Hours and visitor policies" },
 
-  { id:"septenary", n:"Septenary Winery", town:"Greenwood", region:"cville", lat:38.0400, lng:-78.7550, tier:"Monticello alternative",
+  { id:"septenary", n:"Septenary Winery", town:"Greenwood", region:"cville", lat:38.041844, lng:-78.747719, tier:"Monticello alternative",
     hoursText:"Thu–Sun 11 AM–5:30 PM",
     h:"Th-Su 11:00-17:30",
     flights:["By the glass, bottle, or tasting flight","Private tastings by reservation"],
@@ -550,7 +550,7 @@ window.GUIDE = {
     res:"Six or more require reservations; no parties over ten; adults 21+.", resLevel:"walkin",
     why:"A promising intimate alternative to larger Charlottesville wineries, especially for a quiet romantic afternoon.",
     url:"https://www.septenarywinery.com/visit-us/", urlLabel:"Hours, tastings, and policies" },
-  { id:"rappahannock-cellars", n:"Rappahannock Cellars", town:"Huntly", region:"shen", lat:38.8180, lng:-78.1080, tier:"From our Google list",
+  { id:"rappahannock-cellars", n:"Rappahannock Cellars", town:"Huntly", region:"shen", lat:38.834211, lng:-78.114016, tier:"From our Google list",
     hoursText:"Daily noon–6 PM · last pour 5:30 PM · closed New Year's Day, Easter Sunday, Thanksgiving, and Christmas Day",
     h:"Su-Sa 12:00-18:00", closed:["1-1","12-25"],
     flights:["Tasting — about $15 per the Virginia Wine listing; confirm current flights"],
@@ -562,7 +562,7 @@ window.GUIDE = {
     why:"About ten minutes from Flint Hill and open every day — the easiest spontaneous stop on the trip, with fire pits for a winter afternoon with Bravo.",
     url:"https://www.rappahannockcellars.com/visit-us", urlLabel:"Visit information" },
 
-  { id:"quievremont", n:"Quièvremont Vineyard & Winery", town:"Washington", region:"shen", lat:38.7330, lng:-78.1980, tier:"From our Google list",
+  { id:"quievremont", n:"Quièvremont Vineyard & Winery", town:"Washington", region:"shen", lat:38.689546, lng:-78.21168, tier:"From our Google list",
     hoursText:"Thu–Sat & Mon 11 AM–5 PM · Sun 11:30 AM–5 PM · Tue–Wed closed · closed Thanksgiving, Christmas, New Year's Day, and Easter",
     h:"Th,Fr,Sa,Mo 11:00-17:00|Su 11:30-17:00", closed:["1-1","12-25"],
     flights:["Tasting — $18"],
@@ -575,7 +575,7 @@ window.GUIDE = {
     why:"A quiet, wine-focused farm estate close to Flint Hill, in the spirit of the small producers we love.",
     url:"https://quievremont.com", urlLabel:"Official site" },
 
-  { id:"mountain-run", n:"Mountain Run Winery", town:"Culpeper", region:"r231", lat:38.4530, lng:-78.0700, tier:"From our Google list",
+  { id:"mountain-run", n:"Mountain Run Winery", town:"Culpeper", region:"r231", lat:38.466586, lng:-78.051001, tier:"From our Google list",
     hoursText:"Mar–Oct: Fri–Sun noon–7 PM · Nov–Feb: Sat–Sun noon–6 PM · curbside pickup daily",
     h:"Fr-Su 12:00-19:00",
     seasons:[{ m:[11,12,1,2], h:"Sa,Su 12:00-18:00" }],
@@ -588,7 +588,7 @@ window.GUIDE = {
     why:"Google's highest-rated winery on our list (4.9) — a relaxed, family-run farm with award-winning Petit Verdot and Chambourcin.",
     url:"https://www.mountainrunwinery.com/visit-us/", urlLabel:"Hours and visitor information" },
 
-  { id:"sugarloaf", n:"Sugarloaf Mountain Vineyard", town:"Dickerson, MD", region:"md", lat:39.2509, lng:-77.3796, tier:"From our Google list",
+  { id:"sugarloaf", n:"Sugarloaf Mountain Vineyard", town:"Dickerson, MD", region:"md", lat:39.250944, lng:-77.3795523, tier:"From our Google list",
     hoursText:"Typically daily noon–5:30 PM · Tue & Fri until 7:30 PM (per listings; confirm seasonal hours on their site)",
     h:"Su,Mo,We,Th,Sa 12:00-17:30|Tu,Fr 12:00-19:30",
     flights:["Red and white flights — prices not published","Bacchus Club membership"],
@@ -599,7 +599,7 @@ window.GUIDE = {
     res:"Not stated; reviewers suggest arriving early — it gets busy later in the day.", resLevel:"walkin",
     why:"Our one Maryland pick: a lively, brewery-style hangout with mountain views, best paired with a Sugarloaf hike.",
     url:"https://www.smvwinery.com/", urlLabel:"Official site" },
-  { id:"accord", n:"Accord Vineyards", aka:"Formerly Fox Meadow", town:"Linden", region:"shen", lat:38.9120, lng:-78.0920, tier:"Added Oct 2026",
+  { id:"accord", n:"Accord Vineyards", aka:"Formerly Fox Meadow", town:"Linden", region:"shen", lat:38.935282, lng:-78.047744, tier:"Added Oct 2026",
     hoursText:"Mon, Tue, Thu noon–5 PM · Fri & Sun noon–6 PM · Sat noon–7 PM · Wed closed · last call 30 min before closing · closed Thanksgiving, Christmas Eve, Christmas",
     h:"Mo,Tu,Th 12:00-17:00|Fr,Su 12:00-18:00|Sa 12:00-19:00", closed:["12-24","12-25"],
     flights:["Tasting — $20 per person"],
@@ -612,7 +612,7 @@ window.GUIDE = {
     why:"Confirmed: one of the most elevated tasting decks near Front Royal, with two 2026 Governor's Cup golds. Ten minutes from Chester Gap and Linden — easy to pair on one day.",
     url:"https://www.exploretock.com/accordwine", urlLabel:"Reservations and experiences" },
 
-  { id:"magnolia", n:"Magnolia Vineyards & Winery", town:"Amissville", region:"shen", lat:38.6800, lng:-78.0150, tier:"Added Oct 2026",
+  { id:"magnolia", n:"Magnolia Vineyards & Winery", town:"Amissville", region:"shen", lat:38.6451442, lng:-78.0319914, tier:"Added Oct 2026",
     hoursText:"Daily 11:30 AM–5:30 PM (seasonal) · closed Thanksgiving, Christmas Eve, Christmas, and New Year's Day (unless a weekend)",
     h:"Su-Sa 11:30-17:30", closed:["12-24","12-25"],
     flights:["Tasting paired with cheeses and chocolates — $15–$19 ($18–$22 for groups of 8+)","Wine flights"],
@@ -624,7 +624,7 @@ window.GUIDE = {
     why:"Relaxed, intimate, and about 15 minutes from Flint Hill. The food-paired tasting is confirmed; the Old Rag view isn't mentioned in official listings, so check it for yourself.",
     url:"https://magnoliavineyards.com/", urlLabel:"Official site" },
 
-  { id:"ankida-ridge", n:"Ankida Ridge Vineyards", town:"Amherst", region:"ridge", lat:37.6500, lng:-79.1300, tier:"Added Oct 2026",
+  { id:"ankida-ridge", n:"Ankida Ridge Vineyards", town:"Amherst", region:"ridge", lat:37.708804, lng:-79.173821, tier:"Added Oct 2026",
     hoursText:"Fri–Sun noon–5 PM · Saturdays until 6 PM June–August · Mon–Thu closed",
     h:"Fr-Su 12:00-17:00", seasons:[{ m:[6,7,8], h:"Fr,Su 12:00-17:00|Sa 12:00-18:00" }],
     flights:["Estate tasting — current fee not published; call (434) 922-7678"],
@@ -660,7 +660,7 @@ window.GUIDE = {
     why:"Confirmed and then some: five 2026 Governor's Cup golds, and its 2023 Cabernet Franc won the 2026 Monticello Cup (that's the 'Best in Show'). Weekends only — a must on a Charlottesville trip.",
     url:"https://harkvineyards.com/", urlLabel:"Official site" },
 
-  { id:"keswick", n:"Keswick Vineyards", town:"Keswick", region:"cville", lat:38.0750, lng:-78.3650, tier:"Added Oct 2026",
+  { id:"keswick", n:"Keswick Vineyards", town:"Keswick", region:"cville", lat:38.075056, lng:-78.289354, tier:"Added Oct 2026",
     hoursText:"Daily 10 AM–5 PM, Thu–Fri until 6 PM (seasonal) · Wine Down Wednesdays until 8:30 PM May–Oct · last call 4:45 PM · closed Easter, Thanksgiving, Christmas, and New Year's Day",
     h:"Sa-We 10:00-17:00|Th,Fr 10:00-18:00", closed:["12-25","1-1"],
     flights:["Flights, glasses, and bottles daily","Guided tastings Monday–Friday"],
@@ -672,7 +672,7 @@ window.GUIDE = {
     why:"Confirmed on all three counts: historic estate, two 2026 golds, and a real fenced dog park — the best Bravo stop in the Charlottesville area.",
     url:"http://www.keswickvineyards.com/visit/", urlLabel:"Visit information" },
 
-  { id:"muse", n:"Muse Vineyards", town:"Woodstock", region:"valley", lat:38.8700, lng:-78.5100, tier:"Added Oct 2026",
+  { id:"muse", n:"Muse Vineyards", town:"Woodstock", region:"valley", lat:38.856854, lng:-78.502582, tier:"Added Oct 2026",
     hoursText:"Mon–Wed noon–6 PM · Thu–Sat noon–8 PM · Sun noon–7 PM · closes 6 PM on Christmas Eve, New Year's Eve, and New Year's Day · closed Thanksgiving and Christmas",
     h:"Mo-We 12:00-18:00|Th-Sa 12:00-20:00|Su 12:00-19:00", closed:["12-25"],
     flights:["Tasting of the current lineup — fee not published; confirm"],
@@ -684,7 +684,7 @@ window.GUIDE = {
     why:"Confirmed: river setting, mountain backdrop, three 2026 golds, and real food. About 45 minutes from Flint Hill and open late — a strong dinner option.",
     url:"https://musevineyards.com", urlLabel:"Official site" },
 
-  { id:"arterra", n:"Arterra Wines", town:"Delaplane", region:"shen", lat:38.8950, lng:-77.9800, tier:"Added Oct 2026",
+  { id:"arterra", n:"Arterra Wines", town:"Delaplane", region:"shen", lat:38.964628, lng:-77.970114, tier:"Added Oct 2026",
     hoursText:"Mon & Thu noon–5 PM · Fri–Sun noon–6 PM (noon–5 PM in winter) · Tue–Wed by approved reservation only",
     h:"Mo,Th 12:00-17:00|Fr-Su 12:00-18:00", seasons:[{ m:[12,1,2], h:"Mo,Th 12:00-17:00|Fr-Su 12:00-17:00" }],
     flights:["Any five wines — $24; extra tastes $4.80","Glasses and bottles with table service"],
@@ -696,7 +696,7 @@ window.GUIDE = {
     why:"A thoughtful, art-filled small producer next door to Three Fox and Delaplane Cellars — bring a picnic and make it a three-stop afternoon.",
     url:"https://arterrawines.com/visiting-arterra", urlLabel:"Visiting Arterra" },
 
-  { id:"gadino", n:"Gadino Cellars", town:"Washington", region:"shen", lat:38.7300, lng:-78.1450, tier:"Added Oct 2026",
+  { id:"gadino", n:"Gadino Cellars", town:"Washington", region:"shen", lat:38.6887265, lng:-78.1759078, tier:"Added Oct 2026",
     hoursText:"Fri, Sun & Mon 11:30 AM–5 PM · Sat 11:30 AM–6 PM · Tue–Thu closed (seasonal)",
     h:"Fr,Su,Mo 11:30-17:00|Sa 11:30-18:00",
     flights:["Tasting — $10, waived with three or more bottles"],
@@ -708,7 +708,7 @@ window.GUIDE = {
     why:"Unpretentious, dog-friendly, two 2026 golds, and just 10 minutes from Flint Hill — an easy add on any day of the trip except midweek.",
     url:"https://www.gadinocellars.com", urlLabel:"Official site" },
 
-  { id:"crosskeys", n:"CrossKeys Vineyards", town:"Mt. Crawford", region:"valley", lat:38.3550, lng:-78.8350, tier:"Added Oct 2026",
+  { id:"crosskeys", n:"CrossKeys Vineyards", town:"Mt. Crawford", region:"valley", lat:38.3227609, lng:-78.8509813, tier:"Added Oct 2026",
     hoursText:"Mon–Sat 11 AM–7 PM · Sun 11 AM–5 PM · tastings stop 30 min before closing",
     h:"Mo-Sa 11:00-19:00|Su 11:00-17:00",
     flights:["Red, white, or mixed flight — about $22","Sparkling flight — $24","Fruit flight — $18.50","Traditional tasting — $10–$22"],
@@ -721,7 +721,7 @@ window.GUIDE = {
     why:"A polished Valley destination with a real bistro, a deep sparkling program, and four 2026 golds. About 1¾ hours from Flint Hill — pair with Luray or Harrisonburg.",
     url:"https://crosskeysvineyards.com/visit", urlLabel:"Tasting room and experiences" },
 
-  { id:"doukenie", n:"Doukénie Winery", town:"Hillsboro", region:"loud", lat:39.2000, lng:-77.7100, tier:"Added Oct 2026",
+  { id:"doukenie", n:"Doukénie Winery", town:"Hillsboro", region:"loud", lat:39.2081287, lng:-77.7057943, tier:"Added Oct 2026",
     hoursText:"Tue–Thu noon–5 PM · Fri noon–6 PM · Sat–Sun 11 AM–6 PM · Mon closed",
     h:"Tu-Th 12:00-17:00|Fr 12:00-18:00|Sa,Su 11:00-18:00",
     flights:["Tastings and flights — current fee not published"],
@@ -733,7 +733,7 @@ window.GUIDE = {
     why:"A relaxed, family-friendly Loudoun farm winery with a 2026 gold — solid, though less of a destination than Walsh or Breaux nearby.",
     url:"http://www.DoukenieWinery.com", urlLabel:"Official site" },
 
-  { id:"narmada", n:"Narmada Winery", town:"Amissville", region:"shen", lat:38.6900, lng:-78.0400, tier:"Added Oct 2026",
+  { id:"narmada", n:"Narmada Winery", town:"Amissville", region:"shen", lat:38.6916386, lng:-78.0244613, tier:"Added Oct 2026",
     hoursText:"Fri, Sun, Mon & Tue noon–5 PM · Sat noon–6 PM · Wed–Thu closed · Christmas Eve noon–3 PM · closed Thanksgiving, Christmas, New Year's Day",
     h:"Fr,Su,Mo,Tu 12:00-17:00|Sa 12:00-18:00", closed:["12-25","1-1"],
     flights:["Standard tasting — $15","Reserve tasting — $25"],
@@ -745,7 +745,7 @@ window.GUIDE = {
     why:"Three 2026 golds and a distinctive Indian-heritage hospitality story, 15 minutes from Flint Hill. Closed New Year's Day.",
     url:"http://www.narmadawinery.com/", urlLabel:"Official site" },
 
-  { id:"jefferson", n:"Jefferson Vineyards", town:"Charlottesville", region:"cville", lat:37.9950, lng:-78.4650, tier:"Added Oct 2026",
+  { id:"jefferson", n:"Jefferson Vineyards", town:"Charlottesville", region:"cville", lat:37.990445, lng:-78.447227, tier:"Added Oct 2026",
     hoursText:"Daily · Sun–Thu 11:30 AM–6 PM · Fri–Sat 11:30 AM–7 PM · last sale 30 min before closing",
     h:"Su-Th 11:30-18:00|Fr,Sa 11:30-19:00",
     flights:["Self-guided flights, four 2-oz pours — $20 (2–3 flights by season)"],
@@ -757,7 +757,7 @@ window.GUIDE = {
     why:"History you can taste, three 2026 golds, and dogs welcome even indoors — pairs naturally with a Monticello visit.",
     url:"https://monticellowinetrail.com/jefferson-vineyards", urlLabel:"Visitor details" },
 
-  { id:"gray-ghost", n:"Gray Ghost Vineyards", town:"Amissville", region:"shen", lat:38.6750, lng:-77.9650, tier:"Added Oct 2026",
+  { id:"gray-ghost", n:"Gray Ghost Vineyards", town:"Amissville", region:"shen", lat:38.6778304, lng:-78.0044933, tier:"Added Oct 2026",
     hoursText:"Fri–Sun 11 AM–5 PM · some Thursdays noon–4 PM · federal-holiday Mondays 11–5 · call ahead for weekday hours",
     h:"Fr-Su 11:00-17:00",
     flights:["Tasting of about ten wines — $5–$10"],
@@ -834,3 +834,6 @@ window.GUIDE.addr = {
   'jefferson': '1353 Thomas Jefferson Pkwy, Charlottesville, VA 22902',
   'gray-ghost': '14706 Lee Hwy, Amissville, VA 20106'
 };
+
+/* Pins checked against Google-based listings (Wanderlog, Pearl), Winemaps and Roadtrippers, Oct 29 2026; the phone never moves these */
+window.GUIDE.pinsVerified = ["50-west", "accord", "afton-mountain", "ankida-ridge", "arterra", "barboursville", "blue-quartz", "bluemont", "boxwood", "breaux", "cana", "chester-gap", "chrysalis", "crimson-lane", "crosskeys", "delaplane-cellars", "doukenie", "ducard", "early-mountain", "gadino", "glen-manor", "granite-heights", "gray-ghost", "greenhill", "hazy-mountain", "jefferson", "keswick", "king-family", "la-grange", "linden", "magnolia", "michael-shaps", "mountain-run", "muse", "narmada", "pippin-hill", "pollak", "quievremont", "rappahannock-cellars", "revalation", "septenary", "slater-run", "stone-tower", "sugarloaf", "sunset-hills", "three-fox", "valley-road", "veritas", "walsh"];

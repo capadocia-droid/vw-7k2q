@@ -1338,7 +1338,7 @@ async function renderPrefs() {
     <span class="small muted">In Google Maps, open the saved list, tap Share, copy the link and paste it here. The Map tab's Google view gets a button that opens it. A My Maps link (one containing mid=) is embedded in the tab instead.</span>
     <div><button class="btn" data-act="saveMM">Save link</button></div></div></div>
   <div class="section"><h3>Map pins</h3><div class="card stack">
-    <span class="small">${refined} pins refined from OpenStreetMap, ${gps} pinned by GPS, the rest are guide estimates.</span>
+    <span class="small">${(G.pinsVerified || []).length} pins verified against Google-based listings, ${gps} pinned by GPS${refined ? `, ${refined} matched on OpenStreetMap` : ''}; the rest are guide estimates.</span>
     <div><button class="btn" data-act="refine">${svg('pin')}Refine pins now</button></div></div></div>
   <div class="section"><h3>Backup</h3><div class="card stack">
     <span class="small muted">Everything lives on this phone only. Save a backup file now and then (to Google Drive, for example) so a lost phone doesn't mean lost memories.</span>
@@ -1350,7 +1350,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 33 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 34 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {
@@ -1380,25 +1380,19 @@ async function importData(file) {
 async function refinePins(force) {
   if (!navigator.onLine) { if (force) toast('Needs a connection'); return; }
   // v2: match the winery by name near its guide pin, else geocode its street address; one-time redo of older name-only pins
-  if ((S.kv.refine._v || 0) < 2) { for (const k of Object.keys(S.kv.coords)) if (S.kv.coords[k] && S.kv.coords[k][2] === 'osm') delete S.kv.coords[k]; S.kv.refine = { _v: 2 }; force = force || 'auto'; }
+  // v3: guide pins are now verified; drop every automatic pin (keeps GPS pins) and the old distance cache
+  if ((S.kv.refine._v || 0) < 3) { for (const k of Object.keys(S.kv.coords)) if (S.kv.coords[k] && S.kv.coords[k][2] === 'osm') delete S.kv.coords[k]; S.kv.refine = { _v: 3 }; S.kv.legs = {}; await saveKV('legs'); await saveKV('coords'); await saveKV('refine'); softRefresh(); setTimeout(() => ensureRoads(), 500); }
+  const verified = new Set(G.pinsVerified || []);
   const norm = x => String(x || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/&/g, ' ').replace(/\b(vineyards?|winery|wines?|cellars?|farm|estate|and|the|at|brewery)\b/g, ' ').replace(/[^a-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean);
   const nom = async q => { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&countrycodes=us&${q}`, { headers: { 'Accept-Language': 'en' } }); if (!r.ok) throw new Error('nominatim ' + r.status); return r.json(); };
   let n = 0, tried = 0;
   for (const w of G.wineries) {
-    const c = S.kv.coords[w.id]; if (c && c[2] === 'gps') continue; if (!force && (c || S.kv.refine[w.id])) continue;
+    const c = S.kv.coords[w.id]; if (c && c[2] === 'gps') continue; if (verified.has(w.id) || w.id === 'capstone') continue; if (!force && (c || S.kv.refine[w.id])) continue;
     const want = norm(w.n); const g = [w.lat, w.lng];
     try {
       let hit = null;
       const byName = await nom(`q=${enc(w.n.replace(/ & Brewery| & Winery/, '') + ', Virginia')}`); tried++;
-      hit = byName.find(x => { const got = norm(x.name || x.display_name.split(',')[0]); return want.length && want.every(t => got.includes(t)) && miles([+x.lat, +x.lon], g) < 8; });
-      if (!hit && G.addr && G.addr[w.id]) {
-        await sleep(1100);
-        const m = G.addr[w.id].match(/^(.*?),\s*([^,]+),\s*([A-Z]{2})\s*(\d{5})?/);
-        const q = m ? `street=${enc(m[1])}&city=${enc(m[2])}&state=${enc(m[3])}${m[4] ? '&postalcode=' + m[4] : ''}` : `q=${enc(G.addr[w.id])}`;
-        const byAddr = await nom(q); tried++;
-        hit = byAddr.find(x => miles([+x.lat, +x.lon], g) < 10);
-        if (hit) hit._src = 'addr';
-      }
+      hit = byName.find(x => { const got = norm(x.name || x.display_name.split(',')[0]); return want.length && want.every(t => got.includes(t)) && miles([+x.lat, +x.lon], g) < 5; });
       if (hit) { S.kv.coords[w.id] = [+hit.lat, +hit.lon, 'osm', hit._src || 'name']; n++; }
       S.kv.refine[w.id] = true;
     } catch (e) { break; }
