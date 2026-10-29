@@ -193,7 +193,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
       const r = await fetch('https://router.project-osrm.org/route/v1/driving/' + job.pts.map(p => `${(+p[1]).toFixed(5)},${(+p[0]).toFixed(5)}`).join(';') + '?overview=false');
       const j = await r.json(); if (j.code !== 'Ok') return;
       let mi = 0, min = 0;
-      j.routes[0].legs.forEach((l, i) => { const m = l.distance / 1609.34, t = Math.max(1, Math.round(l.duration * 0.8 / 60)); mi += m; min += t; const el = document.querySelector(`[data-lg="${job.di}-${i}"] span`); if (el) el.textContent = `${m < 10 ? m.toFixed(1) : Math.round(m)} mi · ${fmtDrive(t)}`; });
+      j.routes[0].legs.forEach((l, i) => { const m = l.distance / 1609.34, t = Math.max(1, Math.round(l.duration * (0.8 + 0.1 * Math.min(1, Math.max(0, (m - 15) / 45))) / 60)); mi += m; min += t; const el = document.querySelector(`[data-lg="${job.di}-${i}"] span`); if (el) el.textContent = `${m < 10 ? m.toFixed(1) : Math.round(m)} mi · ${fmtDrive(t)}`; });
       const dt = document.querySelector(`[data-dt="${job.di}"]`); if (dt) dt.textContent = `${job.n} stop${job.n > 1 ? 's' : ''} · ${Math.round(mi)} mi · ${fmtDrive(min)} of driving`;
       const ft = document.getElementById('dnote'); if (ft) ft.textContent = 'Drive times are real routes without traffic; Google Maps gives live times.';
     } catch (e) { /* keep estimates */ }
