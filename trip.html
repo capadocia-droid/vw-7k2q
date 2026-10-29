@@ -152,7 +152,8 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
     <div class="sub">${start === end ? esc(fmtDate(start, true)) : `${esc(fmtDate(start))} – ${esc(fmtDate(end, true))}`}<br>Staying in ${esc(baseName)}</div>`;
   let h = notes ? `<div class="notes">${esc(notes)}</div>` : '';
   const routeURL = stops => 'https://www.google.com/maps/dir/' + [baseName, ...stops.map(placeQ), baseName].map(x => enc(x).replace(/%20/g, '+').replace(/%2C/g, ',')).join('/');
-  days.forEach(([ds, raw]) => {
+  const routeJobs = [];
+  days.forEach(([ds, raw], di) => {
     const d = `${ds.slice(0, 4)}-${ds.slice(4, 6)}-${ds.slice(6, 8)}`; const dt = fromISO(d); const hol = holiday(dt);
     const stops = raw.map(s => Array.isArray(s) ? { w: resolve(s[0]), time: s[1], note: s[2] } : { w: resolve(s) });
     h += `<section class="day"><div class="dayhead"><h2>${esc(DAYN[dt.getDay()])}, ${esc(MONTHS[dt.getMonth()])} ${dt.getDate()}</h2>${hol ? `<span class="hol">${esc(hol)}: confirm hours</span>` : ''}</div>`;
@@ -160,11 +161,12 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
     let prev = base, prevName = baseName, tot = 0, totMin = 0; const legs = [];
     stops.forEach(({ w }) => { const p = [w.lat, w.lng]; const mi = (p[0] && prev[0]) ? roadMi(prev, p) : 0; legs.push({ mi, from: prevName }); tot += mi; totMin += legMin(mi); prev = p; prevName = w.n; });
     const back = prev[0] ? roadMi(prev, base) : 0; tot += back; totMin += legMin(back);
-    h += `<div class="daytot">${stops.length} stop${stops.length > 1 ? 's' : ''} · about ${esc(legTxt(tot, totMin))} of driving</div>`;
+    h += `<div class="daytot" data-dt="${di}">${stops.length} stop${stops.length > 1 ? 's' : ''} · about ${esc(legTxt(tot, totMin))} of driving</div>`;
+    routeJobs.push({ di, pts: [base, ...stops.map(({ w }) => [w.lat, w.lng]), base], n: stops.length });
     stops.forEach(({ w, time, note }, i) => {
       const hr = hoursOn(w, dt); const b = briefOf(w);
       const hrTxt = hr ? (hr.length ? `Open ${fmtRange(hr)}` : '<span class="closed">Closed that day by its published hours</span>') : (w.hoursText ? esc(w.hoursText) : 'Check hours before going');
-      h += `<div class="leg">🚗 ${esc(legTxt(legs[i].mi))} from ${esc(legs[i].from)}</div>
+      h += `<div class="leg" data-lg="${di}-${i}">🚗 <span>${esc(legTxt(legs[i].mi))}</span> from ${esc(legs[i].from)}</div>
       <article class="stop"><div class="num">${i + 1}</div>
         <h3><a href="${esc(mapsQ(w))}">${esc(w.n)}</a></h3>
         <div class="addr"><a href="${esc(mapsQ(w))}">${esc(addrOf(w))}</a></div>
@@ -178,12 +180,24 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
         <div class="links"><a class="pill" href="https://www.google.com/maps/dir/?api=1&destination=${enc(placeQ(w))}&travelmode=driving">Directions</a>${w.url ? `<a class="pill" href="${esc(w.url)}">Website</a>` : ''}${w.menuUrl ? `<a class="pill" href="${esc(w.menuUrl)}">Menu</a>` : ''}</div>
       </article>`;
     });
-    h += `<div class="leg">🚗 ${esc(legTxt(back))} back to ${esc(baseName)}</div>`;
+    h += `<div class="leg" data-lg="${di}-${stops.length}">🚗 <span>${esc(legTxt(back))}</span> back to ${esc(baseName)}</div>`;
     h += `<a class="btn" href="${esc(routeURL(stops.map(s => s.w)))}">Open the whole day in Google Maps</a></section>`;
   });
   if (!days.length) h += '<p class="empty">No stops planned yet.</p>';
-  h += `<footer>Distances and drive times are estimates; Google Maps gives exact times.<br>Hours are published schedules, so confirm before you go.<br><br>VA Wine Passport · © Montanha e Neve 2026</footer>`;
+  h += `<footer><span id="dnote">Distances and drive times are estimates; Google Maps gives exact times.</span><br>Hours are published schedules, so confirm before you go.<br><br>VA Wine Passport · © Montanha e Neve 2026</footer>`;
   main.innerHTML = h;
+  // swap estimates for real driving routes (OpenStreetMap routing, no traffic)
+  routeJobs.forEach(async job => {
+    if (job.pts.some(p => !p[0])) return;
+    try {
+      const r = await fetch('https://router.project-osrm.org/route/v1/driving/' + job.pts.map(p => `${(+p[1]).toFixed(5)},${(+p[0]).toFixed(5)}`).join(';') + '?overview=false');
+      const j = await r.json(); if (j.code !== 'Ok') return;
+      let mi = 0, min = 0;
+      j.routes[0].legs.forEach((l, i) => { const m = l.distance / 1609.34, t = Math.max(1, Math.round(l.duration / 60)); mi += m; min += t; const el = document.querySelector(`[data-lg="${job.di}-${i}"] span`); if (el) el.textContent = `${m < 10 ? m.toFixed(1) : Math.round(m)} mi · ${fmtDrive(t)}`; });
+      const dt = document.querySelector(`[data-dt="${job.di}"]`); if (dt) dt.textContent = `${job.n} stop${job.n > 1 ? 's' : ''} · ${Math.round(mi)} mi · ${fmtDrive(min)} of driving`;
+      const ft = document.getElementById('dnote'); if (ft) ft.textContent = 'Drive times are real routes without traffic; Google Maps gives live times.';
+    } catch (e) { /* keep estimates */ }
+  });
 })();
 </script>
 </body>

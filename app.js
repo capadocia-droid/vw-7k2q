@@ -100,7 +100,7 @@ const DB = {
 };
 
 const S = { state: {}, visits: [], photos: [], trips: [], custom: [], kv: {} };
-const KV_KEYS = ['settings', 'coords', 'seeded', 'refine', 'badges', 'stampSeen'];
+const KV_KEYS = ['settings', 'coords', 'seeded', 'refine', 'badges', 'stampSeen', 'legs'];
 
 async function loadAll() {
   await DB.open();
@@ -154,7 +154,42 @@ function miles(a, b) { const R = 3958.8, t = x => (x * Math.PI) / 180; const dLa
 const roadMi = (a, b) => miles(a, b) * 1.3;
 const driveMin = mi => Math.round((mi / 40) * 60);
 const fmtDrive = m => (m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`);
-const distFromBase = w => roadMi([base().lat, base().lng], pos(w));
+/* real road distances: OpenStreetMap routing (OSRM), cached on this phone; straight-line estimate until fetched or offline */
+const pk4 = p => (+p[0]).toFixed(4) + ',' + (+p[1]).toFixed(4);
+function leg(a, b) {
+  const c = S.kv.legs || {}; const v = c[pk4(a) + '|' + pk4(b)] || c[pk4(b) + '|' + pk4(a)];
+  if (v) return { mi: v[0], min: v[1], real: true };
+  const mi = roadMi(a, b); return { mi, min: driveMin(mi) + 3, real: false };
+}
+const legFmt = (l, short) => l.real ? `${l.mi < 10 ? l.mi.toFixed(1) : Math.round(l.mi)} mi · ${fmtDrive(l.min)}` : `~${Math.round(l.mi)} mi${short ? '' : ' · ~' + fmtDrive(l.min)}`;
+let _roadBusy = false, _roadFail = 0;
+async function fetchTable(srcs, dsts) {
+  // one OSRM table request; stores every src→dst pair it returns
+  const pts = []; const ix = p => { const k = pk4(p); let i = pts.findIndex(q => pk4(q) === k); if (i < 0) { pts.push(p); i = pts.length - 1; } return i; };
+  const si = [...new Set(srcs.map(ix))], di = [...new Set(dsts.map(ix))];
+  const url = `https://router.project-osrm.org/table/v1/driving/${pts.map(p => `${(+p[1]).toFixed(5)},${(+p[0]).toFixed(5)}`).join(';')}?sources=${si.join(';')}&destinations=${di.join(';')}&annotations=distance,duration`;
+  const r = await fetch(url); if (!r.ok) throw new Error('route ' + r.status); const j = await r.json(); if (j.code !== 'Ok') throw new Error(j.code);
+  const c = S.kv.legs || (S.kv.legs = {}); let n = 0;
+  si.forEach((a, x) => di.forEach((b, y) => { const m = j.distances?.[x]?.[y], sec = j.durations?.[x]?.[y]; if (a !== b && m != null && sec != null) { c[pk4(pts[a]) + '|' + pk4(pts[b])] = [Math.round(m / 160.934) / 10, Math.max(1, Math.round(sec / 60))]; n++; } }));
+  return n;
+}
+async function ensureRoads(extraPairs) {
+  if (_roadBusy || !navigator.onLine || Date.now() - _roadFail < 5 * 60e3) return;
+  const b = [base().lat, base().lng]; const c = S.kv.legs || {};
+  const missBase = EVERY().map(pos).filter(p => !c[pk4(b) + '|' + pk4(p)] && !c[pk4(p) + '|' + pk4(b)]);
+  const missPairs = (extraPairs || []).filter(([x, y]) => pk4(x) !== pk4(y) && !c[pk4(x) + '|' + pk4(y)] && !c[pk4(y) + '|' + pk4(x)]);
+  if (!missBase.length && !missPairs.length) return;
+  _roadBusy = true;
+  try {
+    let got = 0;
+    for (let i = 0; i < missBase.length; i += 80) got += await fetchTable([b], missBase.slice(i, i + 80));
+    if (missPairs.length) { const pts = [...new Map(missPairs.flat().map(p => [pk4(p), p])).values()]; for (let i = 0; i < pts.length; i += 60) { const chunk = pts.slice(i, i + 60); got += await fetchTable(chunk, pts.length <= 60 ? chunk : pts.slice(0, 60)); } }
+    if (got) { await saveKV('legs'); softRefresh(); }
+  } catch (e) { _roadFail = Date.now(); } finally { _roadBusy = false; }
+}
+const tripPairs = t => Object.values(t.days).flatMap(ids => { const ps = [[t.base.lat, t.base.lng], ...ids.map(W).filter(Boolean).map(pos), [t.base.lat, t.base.lng]]; return ps.slice(1).map((p, i) => [ps[i], p]); });
+const distFromBase = w => leg([base().lat, base().lng], pos(w)).mi;
+const driveFromBase = w => leg([base().lat, base().lng], pos(w));
 function score(id) {
   const s = st(id).score; if (!s || !s.scenery || !s.wine || !s.experience) return null;
   return Math.round((s.scenery * G.rubric.scenery + s.wine * G.rubric.wine + s.experience * G.rubric.experience) / 10);
@@ -378,7 +413,7 @@ function restoreUI() {
 }
 function route() {
   if (curHash !== null && !keepScroll) { scrollMem[skey(curHash)] = scrollY; saveX(); }
-  closeAllSheets();
+  closeAllSheets(); setTimeout(() => ensureRoads(), 1200);
   if (arrangeFor && curHash !== 'w-' + arrangeFor) arrangeFor = null;
   if (mapInst) { mapInst.remove(); mapInst = null; }
   const h = decodeURIComponent(location.hash.slice(1)) || 'home';
@@ -520,7 +555,7 @@ function recommend(n = 5) {
     const tg = tagsOf(w); let dot = 0; tg.forEach(t => (dot += P[t] || 0)); const sim = dot / (Math.sqrt(tg.size) * pNorm);
     let best = null, bestJ = 0; liked.forEach(({ w: l }) => { const lt = tagsOf(l); let inter = 0; tg.forEach(t => lt.has(t) && inter++); const j = inter / (tg.size + lt.size - inter); if (j > bestJ) { bestJ = j; best = l; } });
     const openDays = w.h ? days.filter(d => hoursOn(w, d).length) : null; const nOpen = openDays ? openDays.length : null;
-    const mi = roadMi(bp, pos(w)); const near = Math.max(0, 1 - mi / 90);
+    const mi = leg(bp, pos(w)).mi; const near = Math.max(0, 1 - mi / 90);
     const g = golds(w); const gr = gR(w.id); const want = st(w.id).status === 'want';
     const quality = Math.min(0.15, g * 0.035) + (gr ? Math.min(0.08, Math.max(0, gr[0] - 4.4) * 0.2) : 0) + (inPick('gems', w.id) ? 0.04 : 0) + (inPick('next5', w.id) ? 0.05 : 0);
     const openScore = nOpen == null ? -0.05 : nOpen === 0 ? -0.4 : 0.22 * (nOpen / days.length) - (nOpen === 1 && days.length > 2 ? 0.1 : 0);
@@ -596,7 +631,7 @@ function wCard(w) {
   const s = st(w.id); const sc = score(w.id); const ph = photosOf(w.id)[0];
   const d = distFromBase(w);
   return `<a class="wcard" href="#w-${w.id}" style="--rc:${regionColor(w.region)}"><span class="band"></span>
-    <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(regionName(w.region))} · ${Math.round(d)} mi${gR(w.id) ? ` · <span style="color:var(--gold)">★</span> ${gR(w.id)[0]}` : ''}</span>
+    <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(regionName(w.region))} · ${esc(legFmt(driveFromBase(w), true))}${gR(w.id) ? ` · <span style="color:var(--gold)">★</span> ${gR(w.id)[0]}` : ''}</span>
       <span class="row">${statusChip(w)}</span>${wIcons(w)}</span>
     <span class="side">${ph ? `<img class="thumb" src="${thumbURL(ph)}" alt="">` : isVisited(w.id) ? `<span class="stamp-mini" title="Visited">${svg('check')}</span>` : s.status === 'want' ? `<span style="color:var(--claret)">${svg('heartf', 'width="20" height="20"')}</span>` : '<span></span>'}
       ${sc != null ? `<span class="score">${sc}</span>` : s.fav ? `<span style="color:var(--gold)">${svg('star', 'width="16" height="16"')}</span>` : ''}</span></a>`;
@@ -664,7 +699,7 @@ async function renderWinery(id) {
     w.dog && DOG[w.dog] ? [DOG[w.dog][0], 'dog', DOG[w.dog][1], w.dogs] : null,
     w.foodLevel ? [FOOD[w.foodLevel][0], 'fork', FOOD[w.foodLevel][1], w.picnic === true ? 'Outside picnics allowed' : w.picnic === false ? 'No outside food' : 'Picnic policy: ask'] : null,
     w.resLevel ? [RES[w.resLevel][0], 'cal', RES[w.resLevel][1], w.adults ? 'Adults 21+ only' : ''] : null,
-    ['good', 'route', `${Math.round(d)} mi · ~${fmtDrive(driveMin(d))}`, `Estimated drive from ${base().name.split(',')[0]}`]
+    ['good', 'route', legFmt(driveFromBase(w)), `${driveFromBase(w).real ? 'Driving' : 'Estimated drive'} from ${base().name.split(',')[0]}`]
   ].filter(Boolean);
 
   view.innerHTML = `
@@ -897,7 +932,7 @@ function initLeaflet() {
 function peek(w) {
   MF.peek = w.id; saveUI();
   const pk = $('#peek'); const d = distFromBase(w);
-  pk.innerHTML = `<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font:18px var(--f-display)">${esc(w.n)}</div><div class="small muted">${esc(w.town)} · ${Math.round(d)} mi · ~${fmtDrive(driveMin(d))}</div></div><button class="iconbtn" data-act="closePeek" aria-label="Close">${svg('x')}</button></div>
+  pk.innerHTML = `<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font:18px var(--f-display)">${esc(w.n)}</div><div class="small muted">${esc(w.town)} · ${esc(legFmt(driveFromBase(w)))}</div></div><button class="iconbtn" data-act="closePeek" aria-label="Close">${svg('x')}</button></div>
     <div class="row">${statusChip(w)}${wIcons(w)}</div>
     <div class="row" style="flex-wrap:nowrap"><a class="btn primary block" href="#w-${w.id}">Open guide</a><a class="btn block" href="${navURL(w)}" target="_blank" rel="noopener">${svg('nav')}Directions</a></div>`;
   pk.hidden = false;
@@ -1076,29 +1111,29 @@ function renderTrip(tid) {
   const keys = Object.keys(t.days).sort();
   const days = keys.map((d, di) => {
     const dt = fromISO(d); const stops = t.days[d].map(W).filter(Boolean); const hol = holiday(dt);
-    let prev = bp, total = 0;
+    let prev = bp, total = 0, totMin = 0;
     const rows = stops.map((w, i) => {
-      const p = pos(w); const mi = roadMi(prev, p); total += mi; prev = p; const hrs = hoursOn(w, dt); const m = smeta(t, d, w.id);
+      const p = pos(w); const lg = leg(prev, p); const mi = lg.mi; total += mi; totMin += lg.min; prev = p; const hrs = hoursOn(w, dt); const m = smeta(t, d, w.id);
       const hTxt = hrs ? (hrs.length ? fmtRange(hrs) : 'Closed this day') : (w.irregular ? 'Limited days — check calendar' : 'By reservation — check');
       const bad = hrs && !hrs.length;
       const upOff = i === 0 && di === 0, downOff = i === stops.length - 1 && di === keys.length - 1;
       const upLbl = i === 0 ? 'Move to previous day' : 'Move up', downLbl = i === stops.length - 1 ? 'Move to next day' : 'Move down';
-      return `<div class="leg">↓ ${Math.round(mi)} mi · ~${fmtDrive(driveMin(mi))}</div>
+      return `<div class="leg">↓ ${esc(legFmt(lg))}</div>
         <div class="stop"><span class="num">${i + 1}</span><div class="sb"><a href="#w-${w.id}">${esc(w.n)}</a>
           <div class="small" style="color:var(${bad ? '--claret' : '--muted'})">${m.time ? `<b style="color:var(--ink)">~${fmtClock(m.time)}</b> · ` : ''}${bad ? svg('warn', 'width="13" height="13" style="vertical-align:-2px"') + ' ' : ''}${esc(hTxt)}${w.resLevel === 'required' ? ' · reservation required' : ''}</div>
           ${m.note ? `<div class="small" style="font-style:italic">${esc(m.note)}</div>` : ''}${evsTrip(w.id, d).map(e => `<div class="small evtrip${e.k === 'a' ? ' bad' : ''}">${esc(evShort(e))}</div>`).join('')}</div>
         <div class="ctl"><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="-1" aria-label="${upLbl}" title="${upLbl}" ${upOff ? 'disabled' : ''}>${svg('up')}</button><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="1" aria-label="${downLbl}" title="${downLbl}" ${downOff ? 'disabled' : ''}>${svg('down')}</button><button data-act="editStop" data-tid="${tid}" data-d="${d}" data-i="${i}" aria-label="Edit stop">${svg('dots')}</button></div></div>`;
     }).join('');
-    const back = stops.length ? roadMi(prev, bp) : 0; total += back;
+    const lb = stops.length ? leg(prev, bp) : { mi: 0, min: 0, real: true }; const back = lb.mi; total += back; totMin += stops.length ? lb.min : 0;
     // suggestions: open that day, not visited yet, not already in this trip — nearest to the last stop (or to base when the day is empty)
     const last = stops[stops.length - 1]; const ref = last ? pos(last) : bp; const refName = last ? shortName(last.n) : t.base.name.split(',')[0];
     const openList = ALL().filter(w => !used.has(w.id) && !isVisited(w.id) && w.h && hoursOn(w, dt).length)
-      .map(w => ({ w, mi: roadMi(ref, pos(w)) })).sort((a, b) => a.mi - b.mi).slice(0, 4);
+      .map(w => ({ w, mi: leg(ref, pos(w)).mi })).sort((a, b) => a.mi - b.mi).slice(0, 4);
     const stopsQ = stops.map(stopQ); const baseQ = `${t.base.lat},${t.base.lng}`;
     const navDay = stops.length ? `https://www.google.com/maps/dir/?api=1&origin=${enc(baseQ)}&destination=${enc(baseQ)}&waypoints=${stopsQ.map(enc).join('%7C')}&travelmode=driving` : '';
     const embed = stops.length ? `https://maps.google.com/maps?saddr=${enc(baseQ)}&daddr=${stopsQ.map(enc).join('+to:')}+to:${enc(baseQ)}&output=embed` : '';
     return `<div class="section day"><div class="dayhead"><b>${DAYN[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}</b>${hol ? `<span class="chip warn">${svg('warn')}${hol} · confirm hours</span>` : ''}</div>
-      <div class="card">${stops.length ? `<div class="small muted">From ${esc(t.base.name)}</div>${rows}<div class="leg">↓ ${Math.round(back)} mi back · day total ~${Math.round(total)} mi, ${fmtDrive(driveMin(total))} driving</div>` : '<div class="small muted">No stops yet.</div>'}
+      <div class="card">${stops.length ? `<div class="small muted">From ${esc(t.base.name)}</div>${rows}<div class="leg">↓ ${esc(legFmt(lb))} back · day total ${lb.real ? '' : '~'}${Math.round(total)} mi, ${fmtDrive(totMin)} driving</div>` : '<div class="small muted">No stops yet.</div>'}
         <div class="row" style="margin-top:12px"><button class="btn" data-act="addStop" data-tid="${tid}" data-d="${d}">${svg('plus')}Add stop</button>${stops.length ? `<a class="btn primary" href="${navDay}" target="_blank" rel="noopener">${svg('nav')}Navigate day</a><button class="btn" data-act="showRoute" data-src="${esc(embed)}">${svg('route')}Route map</button><button class="btn" data-act="shareTrip" data-tid="${tid}" data-d="${d}">${svg('share')}Share day</button>` : ''}</div>
         <div class="routebox" data-rk="${tid}:${d}">${openMem['route:' + tid + ':' + d] && stops.length ? (navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${esc(embed)}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>') : ''}</div>
         ${openList.length ? `<div style="margin-top:14px"><h3 style="margin-bottom:2px">Open this day · not visited yet</h3><div class="small muted" style="margin-bottom:4px">Nearest to ${esc(refName)}</div>${openList.map(({ w, mi }) => `<div class="sugg"><span><a href="#w-${w.id}" style="color:var(--ink);font-weight:600;text-decoration:none">${esc(w.n)}</a><br><span class="small muted">${fmtRange(hoursOn(w, dt))} · ${Math.round(mi)} mi${st(w.id).status === 'want' ? ' · on our want list' : ''}${w.resLevel === 'required' ? ' · reservation required' : ''}${evsTrip(w.id, d).filter(e => e.k !== 'a').slice(0, 1).map(e => '<br>' + esc(evShort(e))).join('')}</span></span><button class="btn" data-act="quickAdd" data-tid="${tid}" data-d="${d}" data-id="${w.id}">${svg('plus')}Add</button></div>`).join('')}</div>` : ''}
@@ -1106,7 +1141,8 @@ function renderTrip(tid) {
   }).join('');
   view.innerHTML = `<div class="section" style="margin-top:8px"><div class="small muted">${fmtDate(t.start, true)} – ${fmtDate(t.end, true)}</div><div class="row"><span class="chip ridge">${svg('pin')}Base: ${esc(t.base.name)}</span></div>${t.notes ? `<p class="prose" style="margin:0">${esc(t.notes)}</p>` : ''}</div>${days}
     <div class="section"><button class="btn primary block" data-act="shareTrip" data-tid="${tid}">${svg('share')}Share this trip</button></div>
-    <p class="small muted" style="margin-top:22px">Drive times are straight-line estimates. Tap “Navigate day” for real routes in Google Maps.</p>`;
+    <p class="small muted" style="margin-top:22px">Distances and times are real driving routes (OpenStreetMap, no traffic). Numbers with ~ are straight-line estimates, shown until the phone is online. Tap “Navigate day” for Google's live route.</p>`;
+  const miss = tripPairs(t); if (miss.length) ensureRoads(miss);
 }
 async function moveStop(tid, d, i, dir) {
   const t = S.trips.find(x => x.id === tid); const keys = Object.keys(t.days).sort(); const a = t.days[d]; const id = a[i]; const j = i + dir; const di = keys.indexOf(d);
@@ -1147,14 +1183,14 @@ const briefOf = w => { const f = (w.features || []).slice(0, 3); if (f.length) r
 const DOGLBL = { yes: 'Dogs welcome', limited: 'Dogs in some areas only', no: 'No dogs', unknown: 'Dog policy unconfirmed' };
 const dogOf = w => { const d = (w.dogs || '').trim(); return d ? `Dogs: ${d}` : (DOGLBL[w.dog] || 'Dog policy unconfirmed') + '.'; };
 const legMin = mi => driveMin(mi) + 3; // + local roads and driveways
-const legTxt = (mi, min) => `${mi < 10 ? mi.toFixed(1) : Math.round(mi)} mi · ~${fmtDrive(min ?? legMin(mi))}`;
+const legTxt = (mi, min, real) => `${real ? '' : '~'}${mi < 10 ? mi.toFixed(1) : Math.round(mi)} mi · ${real ? '' : '~'}${fmtDrive(min ?? legMin(mi))}`;
 /* per-day legs: estimates (straight line × 1.3, 40 mph) */
 function dayLegs(t, stops) {
   const b = [t.base.lat, t.base.lng]; let prev = b, prevName = t.base.name || 'base', tot = 0;
-  const legs = stops.map(w => { const p = pos(w); const mi = roadMi(prev, p); tot += mi; const r = { mi, from: prevName }; prev = p; prevName = w.n; return r; });
-  const back = stops.length ? roadMi(prev, b) : 0; tot += back;
-  const totMin = legs.reduce((a, l) => a + legMin(l.mi), 0) + (stops.length ? legMin(back) : 0);
-  return { legs, back, tot, totMin };
+  let totMin = 0, real = true;
+  const legs = stops.map(w => { const p = pos(w); const l = leg(prev, p); tot += l.mi; totMin += l.min; real = real && l.real; const r = { mi: l.mi, min: l.min, real: l.real, from: prevName }; prev = p; prevName = w.n; return r; });
+  const lb = stops.length ? leg(prev, b) : { mi: 0, min: 0, real: true }; tot += lb.mi; if (stops.length) totMin += lb.min; real = real && lb.real;
+  return { legs, back: lb.mi, backMin: lb.min, tot, totMin, real };
 }
 const hoursTxt = (w, dt) => { const h = hoursOn(w, dt); return h ? (h.length ? 'Open ' + fmtRange(h) : 'Closed that day') : 'Check hours'; };
 /* link to the formatted itinerary page (trip.html) — everything travels in the URL hash */
@@ -1199,7 +1235,7 @@ function tripText(t, onlyDay, compact) {
       const m = smeta(t, d, w.id);
       out.push(`${i + 1}. ${w.n}`);
       out.push(`   ${addrOf(w)}`);
-      out.push(`   ${legTxt(L.legs[i].mi)} from ${L.legs[i].from}`);
+      out.push(`   ${legTxt(L.legs[i].mi, L.legs[i].min, L.legs[i].real)} from ${L.legs[i].from}`);
       out.push(`   ${hoursTxt(w, dt)}${m.time ? ' · arrive ~' + fmtClock(m.time) : ''}`);
       const b = briefOf(w); if (b) out.push(`   ${b}`);
       out.push(`   ${dogOf(w)}`);
@@ -1208,12 +1244,12 @@ function tripText(t, onlyDay, compact) {
       if (!compact) out.push('');
     });
     if (compact) out.push('');
-    out.push(`Back to ${t.base.name}: ${legTxt(L.back)}`);
-    out.push(`Day's driving: ${legTxt(L.tot, L.totMin)}`);
+    out.push(`Back to ${t.base.name}: ${legTxt(L.back, L.backMin, L.real)}`);
+    out.push(`Day's driving: ${legTxt(L.tot, L.totMin, L.real)}`);
     out.push(`Directions: ${routeURL(t, stops)}`);
   });
   if (!ds.length) out.push('', 'No stops planned yet.');
-  out.push('', 'Distances and drive times are estimates; hours are published schedules, so confirm before you go.');
+  out.push('', 'Drive times are without traffic (~ marks a rough estimate); hours are published schedules, so confirm before you go.');
   out.push('', 'Sent from VA Wine Passport app');
   return out.join('\n');
 }
@@ -1230,16 +1266,16 @@ function tripHTML(t, onlyDay) {
     const L = dayLegs(t, stops);
     h += '<ol style="margin:4px 0 6px;padding-left:22px">' + stops.map((w, i) => {
       const m = smeta(t, d, w.id); const b = briefOf(w);
-      return `<li style="margin:0 0 12px"><div style="${G2};font-size:13px">🚗 ${esc(legTxt(L.legs[i].mi))} from ${esc(L.legs[i].from)}</div>`
+      return `<li style="margin:0 0 12px"><div style="${G2};font-size:13px">🚗 ${esc(legTxt(L.legs[i].mi, L.legs[i].min, L.legs[i].real))} from ${esc(L.legs[i].from)}</div>`
         + `<b>${A(mapsQ(w), w.n)}</b><br><span style="${G2}">${esc(addrOf(w))}</span><br>`
         + `${esc(hoursTxt(w, dt))}${m.time ? ' · arrive ~' + esc(fmtClock(m.time)) : ''}<br>`
         + (b ? `${esc(b)}<br>` : '') + `<span style="${G2}">🐕 ${esc(dogOf(w))}</span>`
         + (m.note ? `<br><i>Note: ${esc(m.note)}</i>` : '') + evsTrip(w.id, d).map(e => `<br><span style="color:${e.k === 'a' ? '#8A5A00' : '#7B1E3C'}">${esc(evShort(e))}</span>`).join('') + '</li>';
     }).join('') + '</ol>';
-    h += `<div style="${G2};font-size:13px">🚗 Back to ${esc(t.base.name)}: ${esc(legTxt(L.back))}</div>`;
-    h += `<div><b>Day's driving:</b> ${esc(legTxt(L.tot, L.totMin))} · ${A(routeURL(t, stops), 'Directions for the day')}</div>`;
+    h += `<div style="${G2};font-size:13px">🚗 Back to ${esc(t.base.name)}: ${esc(legTxt(L.back, L.backMin, L.real))}</div>`;
+    h += `<div><b>Day's driving:</b> ${esc(legTxt(L.tot, L.totMin, L.real))} · ${A(routeURL(t, stops), 'Directions for the day')}</div>`;
   });
-  return h + '<p style="color:#665F70;font-size:13px;margin-top:18px">Distances and drive times are estimates; hours are published schedules, so confirm before you go.</p><p style="color:#665F70;font-size:13px;margin:10px 0 0"><i>Sent from VA Wine Passport app</i></p></div>';
+  return h + '<p style="color:#665F70;font-size:13px;margin-top:18px">Drive times are without traffic (~ marks a rough estimate); hours are published schedules, so confirm before you go.</p><p style="color:#665F70;font-size:13px;margin:10px 0 0"><i>Sent from VA Wine Passport app</i></p></div>';
 }
 function shareTrip(tid, day) {
   const t = S.trips.find(x => x.id === tid); if (!t) return;
@@ -1278,7 +1314,7 @@ function shareTrip(tid, day) {
 }
 function stopSheet(tid, d) {
   const t = S.trips.find(x => x.id === tid); const dt = fromISO(d); const bp = [t.base.lat, t.base.lng];
-  const list = ALL().map(w => ({ w, hrs: hoursOn(w, dt), mi: roadMi(bp, pos(w)) })).sort((a, b) => a.mi - b.mi);
+  const list = ALL().map(w => ({ w, hrs: hoursOn(w, dt), mi: leg(bp, pos(w)).mi })).sort((a, b) => a.mi - b.mi);
   const el = openSheet(`<h2>Add a stop · ${DAYS3[dt.getDay()]} ${MONTHS[dt.getMonth()]} ${dt.getDate()}</h2><div class="search" style="margin-bottom:8px">${svg('search')}<input type="search" id="sq" placeholder="Filter"></div><div id="sl"></div>`);
   const fill = q => { $('#sl', el).innerHTML = list.filter(x => !q || (x.w.n + ' ' + x.w.town).toLowerCase().includes(q.toLowerCase())).map(({ w, hrs, mi }) => `<div class="sugg"><span><b>${esc(w.n)}</b><br><span class="small" style="color:var(${hrs && !hrs.length ? '--claret' : '--muted'})">${hrs ? (hrs.length ? fmtRange(hrs) : 'Closed this day') : 'Hours vary'} · ${Math.round(mi)} mi</span></span><button class="btn" data-x="${w.id}">${t.days[d].includes(w.id) ? 'Added' : 'Add'}</button></div>`).join(''); };
   fill(''); $('#sq', el).addEventListener('input', e => fill(e.target.value));
@@ -1314,7 +1350,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 30 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 31 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {
@@ -1664,3 +1700,4 @@ window.addEventListener('resize', debounce(() => paintRidges(), 200));
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   setTimeout(() => refinePins(false), 4000);
 })();
+window.addEventListener('online', () => ensureRoads());
