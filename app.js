@@ -631,7 +631,7 @@ function wCard(w) {
   const s = st(w.id); const sc = score(w.id); const ph = photosOf(w.id)[0];
   const d = distFromBase(w);
   return `<a class="wcard" href="#w-${w.id}" style="--rc:${regionColor(w.region)}"><span class="band"></span>
-    <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(regionName(w.region))} · ${esc(legFmt(driveFromBase(w), true))}${gR(w.id) ? ` · <span style="color:var(--gold)">★</span> ${gR(w.id)[0]}` : ''}</span>
+    <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(legFmt(driveFromBase(w), true))}${gR(w.id) ? ` · <span style="color:var(--gold)">★</span> ${gR(w.id)[0]}` : ''}</span>
       <span class="row">${statusChip(w)}</span>${wIcons(w)}</span>
     <span class="side">${ph ? `<img class="thumb" src="${thumbURL(ph)}" alt="">` : isVisited(w.id) ? `<span class="stamp-mini" title="Visited">${svg('check')}</span>` : s.status === 'want' ? `<span style="color:var(--claret)">${svg('heartf', 'width="20" height="20"')}</span>` : '<span></span>'}
       ${sc != null ? `<span class="score">${sc}</span>` : s.fav ? `<span style="color:var(--gold)">${svg('star', 'width="16" height="16"')}</span>` : ''}</span></a>`;
@@ -1350,7 +1350,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 32 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 33 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {
