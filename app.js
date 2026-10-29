@@ -156,7 +156,7 @@ const driveMin = mi => Math.round((mi / 40) * 60);
 const fmtDrive = m => (m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`);
 /* real road distances: OpenStreetMap routing (OSRM), cached on this phone; straight-line estimate until fetched or offline */
 // OpenStreetMap routing assumes slow speeds on rural back roads; checked against Google for Linden, Gray Ghost and Chester Gap, ×0.8 lines up
-const ROAD_K = mi => 0.8 + 0.1 * Math.min(1, Math.max(0, (mi - 15) / 45)); // ×0.8 on short back-road hops, easing to ×0.9 on long highway drives (checked vs Google: Linden, Gray Ghost, Arterra, Jefferson)
+const ROAD_K = () => 0.92; // routing runs slightly slow vs Google; ×0.92 fits Gadino, Chester Gap, Arterra, Gray Ghost and Jefferson within ~2 min (Linden's back roads remain the outlier)
 const pk4 = p => (+p[0]).toFixed(4) + ',' + (+p[1]).toFixed(4);
 function leg(a, b) {
   const c = S.kv.legs || {}; const v = c[pk4(a) + '|' + pk4(b)] || c[pk4(b) + '|' + pk4(a)];
@@ -1352,7 +1352,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 36 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 37 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {

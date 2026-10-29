@@ -1,6 +1,6 @@
 /* Offline support: app shell cached on install; fonts and map tiles cached as you browse. */
-const SHELL = 'vawine-shell-v36';
-const RUNTIME = 'vawine-runtime-v36';
+const SHELL = 'vawine-shell-v37';
+const RUNTIME = 'vawine-runtime-v37';
 const FILES = ['./', './index.html', './app.js', './data.js', './events.js', './trip.html', './leaflet.js', './leaflet.css', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
