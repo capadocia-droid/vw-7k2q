@@ -108,8 +108,8 @@ async function loadAll() {
   keys.forEach((k, i) => (S.state[k] = vals[i]));
   [S.visits, S.photos, S.trips, S.custom] = await Promise.all([DB.all('visits'), DB.all('photos'), DB.all('trips'), DB.all('custom')]);
   for (const k of KV_KEYS) S.kv[k] = await DB.get('kv', k);
-  S.kv.settings = Object.assign({ base: G.defaultBase, myMaps: 'https://maps.app.goo.gl/PPRW5BtEdxrKy36x8', theme: 'system' }, S.kv.settings || {});
-  if (/1k3bSB_lTC7yy6nDtguaLcLDxvJUnBhg|4qUU4Dng4q5XTpmm7/.test(S.kv.settings.myMaps || '')) { S.kv.settings.myMaps = 'https://maps.app.goo.gl/PPRW5BtEdxrKy36x8'; await saveKV('settings'); }
+  S.kv.settings = Object.assign({ base: G.defaultBase, myMaps: 'https://maps.app.goo.gl/BvscbHy2DgWdxo7V8', theme: 'system' }, S.kv.settings || {});
+  if (/1k3bSB_lTC7yy6nDtguaLcLDxvJUnBhg|4qUU4Dng4q5XTpmm7|PPRW5BtEdxrKy36x8/.test(S.kv.settings.myMaps || '')) { S.kv.settings.myMaps = 'https://maps.app.goo.gl/BvscbHy2DgWdxo7V8'; await saveKV('settings'); }
   S.kv.coords = S.kv.coords || {};
   S.kv.refine = S.kv.refine || {};
   if (!S.kv.seeded) await seed();
@@ -227,7 +227,19 @@ function parseHours(str) {
 function schedule(w, d) { const mo = d.getMonth() + 1; let h = w.h; (w.seasons || []).forEach(s => { if (s.m.includes(mo)) h = s.h; }); return parseHours(h); }
 function fmtT(min) { let h = Math.floor(min / 60); const m = min % 60, ap = h >= 12 && h < 24 ? 'PM' : 'AM'; h = h % 12 || 12; return m ? `${h}:${String(m).padStart(2, '0')} ${ap}` : `${h} ${ap}`; }
 const fmtRange = r => r.map(([o, c]) => `${fmtT(o)}–${fmtT(c)}`).join(', ');
-function hoursOn(w, d) { const s = schedule(w, d); if (!s) return null; if ((w.closed || []).includes(`${d.getMonth() + 1}-${d.getDate()}`)) return []; return s[d.getDay()]; }
+/* events & notices (events.js) */
+const EVCAT = { live_music: ['🎵', 'Live music'], wine_dinner: ['🍽️', 'Wine dinner'], holiday_lights: ['✨', 'Holiday lights'], special_tasting: ['🍷', 'Special tasting'], holiday_market: ['🎄', 'Holiday market'], food_pairing: ['🧀', 'Food & wine'], workshop: ['🎨', 'Workshop'], special_experience: ['🌟', 'Special event'], social: ['🎲', 'Social'], food_and_music: ['🎶', 'Food & music'], comedy: ['🎤', 'Comedy'], outdoors: ['🥾', 'Outdoors'], wine_tasting: ['🍷', 'Tasting'], food_truck: ['🚚', 'Food truck'], wine_festival: ['🎪', 'Festival'], film: ['🎬', 'Film'] };
+const EVWARN = ['closure', 'early_closure', 'partial_closure'];
+const EVST = { sold_out: 'Sold out', confirm_details: 'Confirm details', club_priority_verify: 'Members first' };
+let _evIdx = null;
+function evIdx() { if (_evIdx) return _evIdx; _evIdx = {}; ((window.EVENTS && window.EVENTS.items) || []).forEach(e => { if (e.w) (_evIdx[e.w] = _evIdx[e.w] || []).push(e); }); Object.values(_evIdx).forEach(a => a.sort((x, y) => (x.d + (x.s || '')).localeCompare(y.d + (y.s || '')))); return _evIdx; }
+const evEnd = e => e.e || e.d;
+const evsOn = (id, isoD) => (evIdx()[id] || []).filter(e => e.d <= isoD && evEnd(e) >= isoD);
+const evsTrip = (id, isoD) => evsOn(id, isoD).filter(e => e.k !== 'a' || EVWARN.includes(e.c) || e.c === 'hours_conflict'); // long seasonal notices stay on the winery page
+const evUpcoming = id => (evIdx()[id] || []).filter(e => evEnd(e) >= todayISO());
+const evTime = e => e.s ? fmtClock(e.s) + (e.et ? '–' + fmtClock(e.et) : '') : '';
+const evShort = e => e.k === 'a' ? `⚠️ ${e.t}${e.x ? ': ' + e.x : ''}` : `${(EVCAT[e.c] || ['📅'])[0]} ${e.t}${evTime(e) ? ' · ' + evTime(e) : ''}${e.p ? ' · $' + e.p : ''}${EVST[e.st] ? ' · ' + EVST[e.st] : ''}`;
+function hoursOn(w, d) { const s = schedule(w, d); if (!s) return null; if ((w.closed || []).includes(`${d.getMonth() + 1}-${d.getDate()}`)) return []; if (evsOn(w.id, iso(d)).some(e => e.k === 'a' && e.c === 'closure')) return []; return s[d.getDay()]; }
 function openStatus(w, now = new Date()) {
   if (!w.h) return { code: 'vary', label: w.irregular ? 'Limited days · check calendar' : 'Check calendar' };
   const t = now.getHours() * 60 + now.getMinutes(); const today = hoursOn(w, now);
@@ -596,6 +608,19 @@ const DOG = { yes: ['good', 'Bravo welcome'], limited: ['mid', 'Dogs in some are
 const FOOD = { kitchen: ['good', 'Kitchen on site'], trucks: ['good', 'Food trucks & snacks'], snacks: ['mid', 'Snacks & boards'], bring: ['bad', 'Bring a picnic'] };
 const RES = { walkin: ['good', 'Walk-ins welcome'], recommended: ['mid', 'Reserve ahead'], required: ['bad', 'Reservation required'] };
 let wxCache = {};
+function eventsSection(w) {
+  const up = evUpcoming(w.id); if (!up.length) return '';
+  const notes = up.filter(e => e.k === 'a'), evs = up.filter(e => e.k !== 'a');
+  const dlabel = e => { const a = fromISO(e.d); const b = e.e ? fromISO(e.e) : null; const f = x => `${DAYS3[x.getDay()]}, ${MONTHS[x.getMonth()]} ${x.getDate()}`; return b ? `${MONTHS[a.getMonth()]} ${a.getDate()} – ${MONTHS[b.getMonth()]} ${b.getDate()}` : f(a); };
+  const row = e => `<div class="evrow"><div class="evd">${esc(dlabel(e))}</div><div class="evb"><b>${(EVCAT[e.c] || ['📅'])[0]} ${esc(e.t)}</b>
+    <div class="small muted">${[evTime(e), (EVCAT[e.c] || [, ''])[1], e.p ? '$' + e.p : '', e.off ? 'Off-site' + (e.l ? ': ' + e.l : '') : ''].filter(Boolean).map(esc).join(' · ')}${EVST[e.st] ? ` <span class="chip ${e.st === 'sold_out' ? 'closed' : 'warn'}" style="padding:1px 8px;font-size:11px">${EVST[e.st]}</span>` : ''}</div>
+    ${e.x ? `<div class="small">${esc(e.x)}</div>` : ''}${e.u ? `<a class="small" href="${esc(e.u)}" target="_blank" rel="noopener">Details</a>` : ''}</div></div>`;
+  const first = evs.slice(0, 4), rest = evs.slice(4);
+  return `<div class="section"><div class="section-head"><h3>Events & notices</h3><span class="small muted">as of ${fmtDate(window.EVENTS.asOf)}</span></div>
+    ${notes.map(e => `<div class="evnote ${EVWARN.includes(e.c) ? 'bad' : ''}"><b>⚠️ ${esc(e.t)}</b> <span class="small muted">${esc(dlabel(e))}</span><div class="small">${esc(e.x || '')}</div></div>`).join('')}
+    ${evs.length ? `<div class="card" style="padding:2px 14px">${first.map(row).join('')}${rest.length ? `<details class="evmore" data-mk="ev:${w.id}"${openMem['ev:' + w.id] ? ' open' : ''}><summary>${rest.length} more event${rest.length > 1 ? 's' : ''}</summary>${rest.map(row).join('')}</details>` : ''}</div>` : ''}
+  </div>`;
+}
 async function renderWinery(id) {
   const w = W(id); if (!w) { view.innerHTML = '<div class="empty" style="margin-top:20px">That winery isn’t in the guide.</div>'; setTop('Not found', { back: true }); return; }
   const s = st(id); setTop(w.n, { back: true });
@@ -642,6 +667,7 @@ async function renderWinery(id) {
     ${sched ? `<div class="card" style="padding:4px 14px"><table class="hours">${order.map(i => `<tr class="${i === td ? 'today' : ''}"><td>${DAYN[i]}</td><td>${sched[i].length ? fmtRange(sched[i]) : 'Closed'}</td></tr>`).join('')}</table></div>` : ''}
     <p class="small muted" style="margin:0">${esc(w.hoursText || 'No hours on file.')}</p>
   </div>
+  ${eventsSection(w)}
   <div class="section"><div class="glance">${glance.map(([c, i, b, t]) => `<div class="g ${c}">${svg(i)}<div><b>${esc(b)}</b><span>${esc(t || '')}</span></div></div>`).join('')}</div></div>
   ${w.status || w.why || w.mine || s.notes ? `<div class="section">
     ${w.status ? `<p class="small" style="margin:0"><span class="chip ridge">${esc(w.status)}</span></p>` : ''}
@@ -1034,7 +1060,7 @@ function renderTrip(tid) {
       return `<div class="leg">↓ ${Math.round(mi)} mi · ~${fmtDrive(driveMin(mi))}</div>
         <div class="stop"><span class="num">${i + 1}</span><div class="sb"><a href="#w-${w.id}">${esc(w.n)}</a>
           <div class="small" style="color:var(${bad ? '--claret' : '--muted'})">${m.time ? `<b style="color:var(--ink)">~${fmtClock(m.time)}</b> · ` : ''}${bad ? svg('warn', 'width="13" height="13" style="vertical-align:-2px"') + ' ' : ''}${esc(hTxt)}${w.resLevel === 'required' ? ' · reservation required' : ''}</div>
-          ${m.note ? `<div class="small" style="font-style:italic">${esc(m.note)}</div>` : ''}</div>
+          ${m.note ? `<div class="small" style="font-style:italic">${esc(m.note)}</div>` : ''}${evsTrip(w.id, d).map(e => `<div class="small evtrip${e.k === 'a' ? ' bad' : ''}">${esc(evShort(e))}</div>`).join('')}</div>
         <div class="ctl"><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="-1" aria-label="${upLbl}" title="${upLbl}" ${upOff ? 'disabled' : ''}>${svg('up')}</button><button data-act="mvStop" data-tid="${tid}" data-d="${d}" data-i="${i}" data-dir="1" aria-label="${downLbl}" title="${downLbl}" ${downOff ? 'disabled' : ''}>${svg('down')}</button><button data-act="editStop" data-tid="${tid}" data-d="${d}" data-i="${i}" aria-label="Edit stop">${svg('dots')}</button></div></div>`;
     }).join('');
     const back = stops.length ? roadMi(prev, bp) : 0; total += back;
@@ -1049,7 +1075,7 @@ function renderTrip(tid) {
       <div class="card">${stops.length ? `<div class="small muted">From ${esc(t.base.name)}</div>${rows}<div class="leg">↓ ${Math.round(back)} mi back · day total ~${Math.round(total)} mi, ${fmtDrive(driveMin(total))} driving</div>` : '<div class="small muted">No stops yet.</div>'}
         <div class="row" style="margin-top:12px"><button class="btn" data-act="addStop" data-tid="${tid}" data-d="${d}">${svg('plus')}Add stop</button>${stops.length ? `<a class="btn primary" href="${navDay}" target="_blank" rel="noopener">${svg('nav')}Navigate day</a><button class="btn" data-act="showRoute" data-src="${esc(embed)}">${svg('route')}Route map</button><button class="btn" data-act="shareTrip" data-tid="${tid}" data-d="${d}">${svg('share')}Share day</button>` : ''}</div>
         <div class="routebox" data-rk="${tid}:${d}">${openMem['route:' + tid + ':' + d] && stops.length ? (navigator.onLine ? `<iframe class="mapframe" style="margin-top:12px" src="${esc(embed)}" title="Google route map" loading="lazy"></iframe>` : '<div class="mapholder" style="margin-top:12px">Route map needs a connection.</div>') : ''}</div>
-        ${openList.length ? `<div style="margin-top:14px"><h3 style="margin-bottom:2px">Open this day · not visited yet</h3><div class="small muted" style="margin-bottom:4px">Nearest to ${esc(refName)}</div>${openList.map(({ w, mi }) => `<div class="sugg"><span><a href="#w-${w.id}" style="color:var(--ink);font-weight:600;text-decoration:none">${esc(w.n)}</a><br><span class="small muted">${fmtRange(hoursOn(w, dt))} · ${Math.round(mi)} mi${st(w.id).status === 'want' ? ' · on our want list' : ''}${w.resLevel === 'required' ? ' · reservation required' : ''}</span></span><button class="btn" data-act="quickAdd" data-tid="${tid}" data-d="${d}" data-id="${w.id}">${svg('plus')}Add</button></div>`).join('')}</div>` : ''}
+        ${openList.length ? `<div style="margin-top:14px"><h3 style="margin-bottom:2px">Open this day · not visited yet</h3><div class="small muted" style="margin-bottom:4px">Nearest to ${esc(refName)}</div>${openList.map(({ w, mi }) => `<div class="sugg"><span><a href="#w-${w.id}" style="color:var(--ink);font-weight:600;text-decoration:none">${esc(w.n)}</a><br><span class="small muted">${fmtRange(hoursOn(w, dt))} · ${Math.round(mi)} mi${st(w.id).status === 'want' ? ' · on our want list' : ''}${w.resLevel === 'required' ? ' · reservation required' : ''}${evsTrip(w.id, d).filter(e => e.k !== 'a').slice(0, 1).map(e => '<br>' + esc(evShort(e))).join('')}</span></span><button class="btn" data-act="quickAdd" data-tid="${tid}" data-d="${d}" data-id="${w.id}">${svg('plus')}Add</button></div>`).join('')}</div>` : ''}
       </div></div>`;
   }).join('');
   view.innerHTML = `<div class="section" style="margin-top:8px"><div class="small muted">${fmtDate(t.start, true)} – ${fmtDate(t.end, true)}</div><div class="row"><span class="chip ridge">${svg('pin')}Base: ${esc(t.base.name)}</span></div>${t.notes ? `<p class="prose" style="margin:0">${esc(t.notes)}</p>` : ''}</div>${days}
@@ -1152,6 +1178,7 @@ function tripText(t, onlyDay, compact) {
       const b = briefOf(w); if (b) out.push(`   ${b}`);
       out.push(`   ${dogOf(w)}`);
       if (m.note) out.push(`   Note: ${m.note}`);
+      evsTrip(w.id, d).forEach(e => out.push(`   ${evShort(e)}`));
       if (!compact) out.push('');
     });
     if (compact) out.push('');
@@ -1181,7 +1208,7 @@ function tripHTML(t, onlyDay) {
         + `<b>${A(mapsQ(w), w.n)}</b><br><span style="${G2}">${esc(addrOf(w))}</span><br>`
         + `${esc(hoursTxt(w, dt))}${m.time ? ' · arrive ~' + esc(fmtClock(m.time)) : ''}<br>`
         + (b ? `${esc(b)}<br>` : '') + `<span style="${G2}">🐕 ${esc(dogOf(w))}</span>`
-        + (m.note ? `<br><i>Note: ${esc(m.note)}</i>` : '') + '</li>';
+        + (m.note ? `<br><i>Note: ${esc(m.note)}</i>` : '') + evsTrip(w.id, d).map(e => `<br><span style="color:${e.k === 'a' ? '#8A5A00' : '#7B1E3C'}">${esc(evShort(e))}</span>`).join('') + '</li>';
     }).join('') + '</ol>';
     h += `<div style="${G2};font-size:13px">🚗 Back to ${esc(t.base.name)}: ${esc(legTxt(L.back))}</div>`;
     h += `<div><b>Day's driving:</b> ${esc(legTxt(L.tot, L.totMin))} · ${A(routeURL(t, stops), 'Directions for the day')}</div>`;
@@ -1261,7 +1288,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 27 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 29 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {

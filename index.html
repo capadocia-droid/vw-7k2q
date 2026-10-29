@@ -346,6 +346,15 @@ details.more summary::-webkit-details-marker{display:none}
 .viewer .cap{color:#ddd;padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));font-size:14px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));z-index:1000;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:calc(100% - 32px)}
 .confirm{display:flex;flex-direction:column;gap:12px}
+.evrow{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.evrow:last-child,.evmore .evrow:last-child{border-bottom:0}
+.evd{flex:none;width:84px;font-size:12px;font-weight:700;color:var(--claret);padding-top:2px;line-height:1.3}
+.evb{min-width:0;display:flex;flex-direction:column;gap:2px}
+.evmore summary{padding:10px 0;font-weight:600;font-size:14px;color:var(--claret);cursor:pointer}
+.evnote{border:1px solid var(--line);border-left:4px solid var(--ridge);background:var(--surface);border-radius:12px;padding:9px 12px;margin-bottom:8px}
+.evnote.bad{border-left-color:var(--claret)}
+.evtrip{color:var(--claret);margin-top:2px}
+.evtrip.bad{color:var(--warn,#8A5A00)}
 </style>
 </head>
 <body>
@@ -368,6 +377,7 @@ details.more summary::-webkit-details-marker{display:none}
 <input type="file" id="importPick" accept="application/json,.json" hidden>
 <script src="leaflet.js"></script>
 <script src="data.js"></script>
+<script src="events.js"></script>
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
 </body>

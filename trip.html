@@ -53,6 +53,9 @@ h2{font:400 22px/1.2 'Young Serif',Georgia,serif;margin:0}
 @media (prefers-color-scheme: dark){ .btn{color:#1E1B23} }
 .empty{color:var(--muted);font-style:italic}
 footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-height:1.6}
+.line.ev{background:var(--sunk);border-radius:10px;padding:7px 9px;margin-top:6px}
+.line.ev.warn{background:var(--warn-soft)}
+.evx{color:var(--muted);font-size:14px}
 .err{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:24px}
 </style>
 </head>
@@ -60,6 +63,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
 <header class="top"><div class="in" id="head"><div class="eyebrow">Virginia wine trip</div><h1>Itinerary</h1></div></header>
 <main class="wrap" id="main"></main>
 <script src="data.js"></script>
+<script src="events.js"></script>
 <script>
 (function () {
   const G = window.GUIDE || { wineries: [], addr: {} };
@@ -87,7 +91,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
   function schedule(w, d) { const mo = d.getMonth() + 1; let h = w.h; (w.seasons || []).forEach(s => { if (s.m.includes(mo)) h = s.h; }); return parseHours(h); }
   function fmtT(min) { let h = Math.floor(min / 60); const m = min % 60, ap = h >= 12 && h < 24 ? 'PM' : 'AM'; h = h % 12 || 12; return m ? `${h}:${String(m).padStart(2, '0')} ${ap}` : `${h} ${ap}`; }
   const fmtRange = r => r.map(([o, c]) => `${fmtT(o)}–${fmtT(c)}`).join(', ');
-  function hoursOn(w, d) { const s = schedule(w, d); if (!s) return null; if ((w.closed || []).includes(`${d.getMonth() + 1}-${d.getDate()}`)) return []; return s[d.getDay()]; }
+  function hoursOn(w, d) { const s = schedule(w, d); if (!s) return null; if ((w.closed || []).includes(`${d.getMonth() + 1}-${d.getDate()}`)) return []; const di = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if (((window.EVENTS && window.EVENTS.items) || []).some(e => e.w === w.id && e.k === 'a' && e.c === 'closure' && e.d <= di && (e.e || e.d) >= di)) return []; return s[d.getDay()]; }
   const fmtClock = v => { if (!v) return ''; const [h, m] = v.split(':').map(Number); return fmtT(h * 60 + m); };
   function holiday(d) {
     const md = `${d.getMonth() + 1}-${d.getDate()}`;
@@ -108,6 +112,11 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
   const dogOf = w => { const d = (w.dogs || '').trim(); if (/^not permitted/i.test(d)) return d.replace(/^not permitted\.?/i, 'No dogs allowed.'); return d || (DOGLBL[w.dog] || 'Dog policy unconfirmed') + '.'; };
   const briefOf = w => { const f = (w.features || []).slice(0, 3); if (f.length) return f.map((x, i) => i ? x.charAt(0).toLowerCase() + x.slice(1) : x).join(', ') + '.'; return ''; };
 
+  const EVCAT = { live_music: '🎵', wine_dinner: '🍽️', holiday_lights: '✨', special_tasting: '🍷', holiday_market: '🎄', food_pairing: '🧀', workshop: '🎨', special_experience: '🌟', social: '🎲', food_and_music: '🎶', comedy: '🎤', outdoors: '🥾', wine_tasting: '🍷', food_truck: '🚚', wine_festival: '🎪', film: '🎬' };
+  const EVST = { sold_out: 'Sold out', confirm_details: 'Confirm details', club_priority_verify: 'Members first' };
+  const EVS = (window.EVENTS && window.EVENTS.items) || [];
+  const evsOn = (id, d) => id ? EVS.filter(e => e.w === id && e.d <= d && (e.e || e.d) >= d).sort((a, b) => (a.s || '').localeCompare(b.s || '')) : [];
+  const evTime = e => e.s ? fmtClock(e.s) + (e.et ? '–' + fmtClock(e.et) : '') : '';
   function decode(h) {
     const s = h.replace(/-/g, '+').replace(/_/g, '/'); const pad = s + '==='.slice((s.length + 3) % 4);
     const bin = atob(pad); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -165,6 +174,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
         <div class="line"><span class="ic">🐕</span><span>${esc(dogOf(w))}</span></div>
         ${w.res ? `<div class="line"><span class="ic">📅</span><span>${esc(String(w.res).split(/(?<=\.)\s/)[0])}</span></div>` : ''}
         ${note ? `<div class="note">📝 ${esc(note)}</div>` : ''}
+        ${evsOn(w.id, d).filter(e => e.k !== 'a' || ['closure', 'early_closure', 'partial_closure', 'hours_conflict'].includes(e.c)).map(e => `<div class="line ev${e.k === 'a' ? ' warn' : ''}"><span class="ic">${e.k === 'a' ? '⚠️' : (EVCAT[e.c] || '📅')}</span><span><b>${esc(e.t)}</b>${evTime(e) ? ' · ' + esc(evTime(e)) : ''}${e.p ? ' · $' + e.p : ''}${EVST[e.st] ? ' · ' + EVST[e.st] : ''}${e.x ? `<br><span class="evx">${esc(e.x)}</span>` : ''}${e.u ? ` <a href="${esc(e.u)}">Details</a>` : ''}</span></div>`).join('')}
         <div class="links"><a class="pill" href="https://www.google.com/maps/dir/?api=1&destination=${enc(placeQ(w))}&travelmode=driving">Directions</a>${w.url ? `<a class="pill" href="${esc(w.url)}">Website</a>` : ''}${w.menuUrl ? `<a class="pill" href="${esc(w.menuUrl)}">Menu</a>` : ''}</div>
       </article>`;
     });
