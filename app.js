@@ -413,6 +413,31 @@ $('#backBtn').addEventListener('click', () => {
 /* ---------------- HOME ---------------- */
 let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if ((location.hash || '#home') === '#home') renderHome(); });
+/* home: next events, one per winery */
+function allUpcomingEvents() {
+  const today = todayISO(); const hidden = id => S.state[id] && S.state[id].hidden;
+  return ((window.EVENTS && window.EVENTS.items) || []).filter(e => e.k === 'e' && e.w && W(e.w) && !hidden(e.w) && evEnd(e) >= today)
+    .sort((a, b) => (a.d + (a.s || '99')).localeCompare(b.d + (b.s || '99')));
+}
+const evDay = isoD => { const x = fromISO(isoD); const t = todayISO(); const tm = iso(new Date(Date.now() + 864e5)); return isoD === t ? 'Today' : isoD === tm ? 'Tomorrow' : `${DAYS3[x.getDay()]}, ${MONTHS[x.getMonth()]} ${x.getDate()}`; };
+function evHomeRow(e, close) {
+  const w = W(e.w); const bits = [evTime(e), (EVCAT[e.c] || [, ''])[1], e.p ? '$' + e.p : ''].filter(Boolean);
+  return `<a class="evrow evlink" href="#w-${e.w}"${close ? ' onclick="closeSheet()"' : ''}><div class="evd">${esc(evDay(e.d < todayISO() ? todayISO() : e.d))}</div><div class="evb"><b>${(EVCAT[e.c] || ['📅'])[0]} ${esc(e.t)}</b><span class="small" style="color:var(--ink)">${esc(w.n)}${isVisited(w.id) ? '' : ' · <span class="muted">not visited yet</span>'}</span><span class="small muted">${esc(bits.join(' · '))}${EVST[e.st] ? ' · ' + EVST[e.st] : ''}</span></div></a>`;
+}
+function homeEvents() {
+  const all = allUpcomingEvents(); if (!all.length) return '';
+  const seen = new Set(), pick = [];
+  for (const e of all) { if (seen.has(e.w)) continue; seen.add(e.w); pick.push(e); if (pick.length === 5) break; }
+  return `<div class="section"><div class="section-head"><h3>Upcoming events</h3><button class="linkbtn" data-act="allEvents">See all ${all.length}</button></div>
+    <div class="card" style="padding:2px 14px">${pick.map(e => evHomeRow(e)).join('')}</div></div>`;
+}
+function allEventsSheet() {
+  const all = allUpcomingEvents(); const groups = {};
+  all.forEach(e => { const k = e.d < todayISO() ? todayISO() : e.d; (groups[k] = groups[k] || []).push(e); });
+  openSheet(`<h2>Upcoming events</h2><p class="small muted" style="margin:-4px 0 8px">${all.length} events at our wineries · as of ${fmtDate(window.EVENTS.asOf)}. Tap one to open the winery.</p>
+    <div style="max-height:62vh;overflow:auto">${Object.keys(groups).sort().map(k => `<div class="evgroup">${esc(evDay(k))}</div>${groups[k].map(e => evHomeRow(e, true).replace(/<div class="evd">[^<]*<\/div>/, '')).join('')}`).join('')}</div>
+    <div class="foot"><button class="btn" onclick="closeSheet()">Close</button></div>`);
+}
 function renderHome() {
   setTop('VA Wine Passport', { logo: true, actions: `${Sync.enabled ? `<span id="syncBadge">${syncBadge()}</span>` : ''}<button class="iconbtn" data-act="go" data-to="prefs" aria-label="Settings">${svg('gear')}</button>` });
   const all = ALL(); const visited = all.filter(w => isVisited(w.id)).length;
@@ -443,6 +468,7 @@ function renderHome() {
     <div class="section"><div class="section-head"><h3>Open now near ${esc(b.name.split(',')[0])}</h3><a href="#wineries" data-act="filter" data-f="open">See all</a></div>
       ${openNear.length ? `<div class="wlist">${openNear.map(wCard).join('')}</div>` : `<div class="empty">Nothing on the list is open right now. ${nextOpening(all)}</div>`}</div>
     ${recoSection()}
+    ${homeEvents()}
     <div class="section"><h3>Collections</h3><div class="collections">
       ${['added', 'glist', 'scenery', 'food', 'gems', 'bravo', 'plan'].map(k => `<a class="coll" href="#wineries" data-act="coll" data-k="${k}"><b>${esc(G.picks[k].title)}</b><span>${G.picks[k].ids.length} wineries</span></a>`).join('')}
       <a class="coll" href="#wineries" data-act="filter" data-f="want"><b>Our want-to-go list</b><span>${all.filter(w => st(w.id).status === 'want').length} saved</span></a>
@@ -1288,7 +1314,7 @@ async function renderPrefs() {
   <div class="section"><h3>About</h3><p class="small muted prose" style="margin:0">VA Wine Passport ${VERSION}. Guide data from “The Virginia Wine Guide — Complete Text Edition”, ${esc(G.edition)}. Hours, flights, prices, and policies change; confirm with each winery. Weather by Open-Meteo. Map tiles © OpenStreetMap contributors. Google maps load from Google when online.</p>
     <div><button class="btn" data-act="reset">${svg('trash')}Erase all my data</button></div></div>
   <p class="small muted" style="text-align:center;margin:30px 0 6px;letter-spacing:.02em">© Montanha e Neve 2026</p>
-  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 29 · trip links</p>`;
+  <p class="small muted" style="text-align:center;margin:0 0 6px;opacity:.7">App update 30 · trip links</p>`;
   $('#baseW').addEventListener('change', async e => { const w = W(e.target.value); if (!w) return; const p = pos(w); S.kv.settings.base = { name: `${w.n}, ${w.town}`, lat: p[0], lng: p[1] }; await saveKV('settings'); toast('Base updated'); renderPrefs(); });
 }
 async function exportData() {
@@ -1539,6 +1565,7 @@ function emailSheet() {
 
 /* ---------------- actions ---------------- */
 const ACT = {
+  allEvents: () => allEventsSheet(),
   go: el => go(el.dataset.to),
   install: async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; renderHome(); },
   filter: (el, e) => { e.preventDefault(); F.on = new Set([el.dataset.f]); F.coll = ''; F.region = ''; go('wineries'); },
