@@ -602,15 +602,77 @@ window.GUIDE = {
   { id:"accord", n:"Accord Vineyards", aka:"Formerly Fox Meadow", town:"Linden", region:"shen", lat:38.935282, lng:-78.047744, tier:"Added Oct 2026",
     hoursText:"Mon, Tue, Thu noon–5 PM · Fri & Sun noon–6 PM · Sat noon–7 PM · Wed closed · last call 30 min before closing · closed Thanksgiving, Christmas Eve, Christmas",
     h:"Mo,Tu,Th 12:00-17:00|Fr,Su 12:00-18:00|Sa 12:00-19:00", closed:["12-24","12-25"],
-    flights:["Tasting — $20 per person"],
+    flights:["Autumn Tasting — $20 (4 wines, 1.5 oz pours)","Dry White Tasting — $25","Dry Red Tasting — $30","Sweet Wine Tasting — $25","Guided Tasting — $35 (staff-led, matched to your taste; weekdays and select weekends)"],
     experiences:["Through the Vines private tour & tasting — $55 (seasonal, Aug–Nov)","Vineyard walk & tasting — $65 (seasonal)","Paired tastings and vineyard dinners on select dates"],
-    food:"Light fare. No outside food in the tasting room or on the deck; picnics allowed in the picnic area with a wine purchase.", foodLevel:"snacks", picnic:true,
+    food:"Charcuterie boards (most weekends), cheese and snack boards, warm pretzels, add-ons, and desserts, with table service in the tasting room and on the deck. Outside food only in the picnic area; no outside alcohol.", foodLevel:"snacks", picnic:true,
     wines:["Merlot (2023 — Governor's Cup Gold)","Fiery Run Chardonnay (2024 — Governor's Cup Gold)"],
     features:["Atop Blue Mountain","Panoramic Blue Ridge views","Cool mountain breezes","Deck and picnic area","Library room (21+)"],
     dogs:"Leashed pets welcome on the deck and in the picnic areas, not inside.", dog:"limited",
     res:"Reservations encouraged on weekends. Groups capped at eight ($20/person minimum; 20% gratuity for 6+). Main tasting room is 13+.", resLevel:"recommended",
     why:"Confirmed: one of the most elevated tasting decks near Front Royal, with two 2026 Governor's Cup golds. Ten minutes from Chester Gap and Linden — easy to pair on one day.",
-    url:"https://www.exploretock.com/accordwine", urlLabel:"Reservations and experiences" },
+    url:"https://www.exploretock.com/accordwine", urlLabel:"Reservations and experiences", menuUrl:"https://www.accordwine.com/our-menu",
+    menu:{ asOf:"2026-11-01", source:"Winery's online menu and wine list",
+      note:"Tastings are 1.5 oz pours; each wine notes which tasting it's in. Table service in the tasting room and on the deck; food can go to the picnic area.",
+      food:[
+        { sec:"Charcuterie boards (most weekends)", items:[
+          { n:"Small Charcuterie Board", p:"$45", d:"Serves 1–2. Two salamis, three cheeses, olives, preserves, three crackers, chocolate-covered almonds, fruit." },
+          { n:"Large Charcuterie Board", p:"$80", d:"Serves 3–4. Same lineup, bigger." } ]},
+        { sec:"Cheese boards", items:[
+          { n:"Locksley Farmstead Cheese Plate", p:"$20", d:"Local hard cheeses with Firehook crackers." },
+          { n:"Tuscan Cheddar & Crackers", p:"$15", d:"Cabot Tuscan Italian-herb cheddar with Carr's crackers." },
+          { n:"Happy Creek Goat Cheese Spread", p:"$10", d:"Honey, or onion and chive, with half a baguette." },
+          { n:"Warm Camembert", p:"$15", d:"With local honey and almonds, or fig preserves and pistachios; half baguette." },
+          { n:"Warm Bavarian Pretzels", p:"$15", d:"With Birdie's pimento cheese, classic or smoked gouda." } ]},
+        { sec:"Snack boards", items:[
+          { n:"Warm Half Baguette", p:"$6", d:"Olive oil and herbs." },
+          { n:"Tomato Parmesan Dip", p:"$15", d:"With a warm half baguette." },
+          { n:"Hummus", p:"$20", d:"With pita and vegetables." } ]},
+        { sec:"Add-ons", items:[
+          { n:"Baguette", p:"$4 half / $7 full" },
+          { n:"Mild Chorizo", p:"$11" },
+          { n:"Toscano Fennel Sausage", p:"$11" },
+          { n:"Rosemary Lamb Salami", p:"$15" },
+          { n:"Beef Salami", p:"$15" },
+          { n:"Castelvetrano Olives", p:"$6" },
+          { n:"Chutney", p:"$10", d:"Fig and black tea, apple cranberry, or pear and ginger." },
+          { n:"Warm Mixed Nuts", p:"$7" },
+          { n:"Crackers", p:"$5 Carr's / $8 Firehook" } ]},
+        { sec:"Something sweet", items:[
+          { n:"Molten Chocolate Cake", p:"$9" },
+          { n:"Trio of Seasonal Sorbet", p:"$8" },
+          { n:"Limoncello Chocolate Almonds", p:"$11" },
+          { n:"Vine to Bar Chocolate", p:"$9" } ]},
+        { sec:"Non-alcoholic", items:[
+          { n:"Lemonade", p:"$5" },
+          { n:"Hot Chocolate", p:"$6" },
+          { n:"Sodas, sweet tea, apple juice, water", p:"$3", d:"Root beer, Coke, Diet Coke, Sprite; sparkling water $3 small / $8 large." } ]}
+      ],
+      wine:[
+        { sec:"White", items:[
+          { n:"2024 Élevage Chardonnay", d:"apple, persimmon, soft oak · Autumn tasting", g:"$12", b:"$35" },
+          { n:"2022 Barrel Fermented Chardonnay", d:"melon, flint, cantaloupe · Dry White tasting", g:"$12", b:"$35" },
+          { n:"2024 Fiery Run Chardonnay", d:"2026 Governor's Cup Gold · pear, green apple, lemon · Dry White tasting", g:"$10", b:"$31" },
+          { n:"2024 Trail Blaze Chardonnay", d:"starfruit, honeysuckle, mango", g:"$10", b:"$31" },
+          { n:"2024 Pinot Grigio", d:"white cherry, papaya, white pepper · Autumn tasting", g:"$10", b:"$30" },
+          { n:"2024 Le Renard Gris", d:"grapefruit, kumquat, pear · Dry White tasting", g:"$11", b:"$32" },
+          { n:"2025 Vidal Blanc", d:"peach, lemon zest, blossoms · Autumn tasting", g:"$11", b:"$31" },
+          { n:"2024 Petit Manseng", d:"pineapple, vanilla, quince · Dry White tasting", g:"$12", b:"$34" } ]},
+        { sec:"Rosé & red", items:[
+          { n:"2025 Rosé", d:"dry · strawberry, plum skin, blackberry purée", g:"$11", b:"$32" },
+          { n:"Situationally Dependent", d:"blueberry, pomegranate, mocha · Dry Red tasting", g:"$13", b:"$39" },
+          { n:"2023 Cabernet Sauvignon", d:"pomegranate, blueberry, sandalwood · Dry Red tasting", g:"$15", b:"$45" },
+          { n:"2023 Merlot", d:"2026 Governor's Cup Gold · blackberry, plum, black cherry · Autumn tasting", g:"$17", b:"$50" },
+          { n:"2023 Le Renard Rouge", d:"black cherry, damson plum, cedar · Dry Red tasting", g:"$17", b:"$53" },
+          { n:"2022 Petit Verdot", d:"concentrated, boysenberry, earthy · Dry Red tasting", g:"$17", b:"$59" } ]},
+        { sec:"Off-dry & sweet", items:[
+          { n:"Blue Mountain Mist", d:"off-dry · mango, lemon, peach · Sweet tasting", g:"$9", b:"$25" },
+          { n:"Freezeland White", d:"sweet · tangerine, mango · Sweet tasting", g:"$9", b:"$25" },
+          { n:"Pêche Blanc", d:"sweet · peach, orange blossom, almond · Sweet tasting", g:"$10", b:"$28" },
+          { n:"Freezeland Red", d:"semi-sweet · raspberry, persimmon, blueberry · Sweet tasting", g:"$9", b:"$25" } ]},
+        { sec:"Sparkling & cider (bottle only)", items:[
+          { n:"2023 Ascend Sparkling Chardonnay", d:"green apple, toasted brioche, honeydew", b:"$75" },
+          { n:"Core Sparkling Cider", d:"dry, crisp · apple, ginger", b:"$35" } ]}
+      ] } },
 
   { id:"magnolia", n:"Magnolia Vineyards & Winery", town:"Amissville", region:"shen", lat:38.6451442, lng:-78.0319914, tier:"Added Oct 2026",
     hoursText:"Thu–Mon 11:30 AM–5:30 PM (Tue & Wed closed) · daily June–October · closed Thanksgiving, Christmas Eve, Christmas, and New Year's Day (unless a weekend)",
