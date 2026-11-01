@@ -370,21 +370,75 @@ async function onPicked(e) {
   const n = await addPhotos(files, pickCtx.wid, pickCtx.visitId, pickCtx.kind);
   toast(`${n} photo${n === 1 ? '' : 's'} saved`); const a = pickCtx.after; pickCtx = null; if (a) a(); else route();
 }
-async function openViewer(pid) {
-  const p = S.photos.find(x => x.id === pid); if (!p) return; const url = await fullURL(pid); const w = W(p.wid);
+/* full-screen photo viewer: arrows (and swipe / keyboard) step through the set the photo was opened from */
+async function openViewer(pid, ids) {
+  let list = (ids && ids.length ? ids : [pid]).filter(id => S.photos.some(x => x.id === id));
+  let i = Math.max(0, list.indexOf(pid)); if (!list.length) return;
   const v = document.createElement('div'); v.className = 'viewer';
-  v.innerHTML = `<div class="vbar"><button data-v="close">Close</button><span class="row"><button data-v="cover">Set as cover</button><button data-v="del">Delete</button></span></div>
-    <img src="${url || thumbURL(p)}" alt="${esc(p.caption || (w ? w.n : 'Photo'))}">
-    <div class="cap"><input type="text" id="capIn" placeholder="Add a caption" value="${esc(p.caption)}" style="background:rgba(255,255,255,.1);color:#fff;border-color:transparent"><div class="small" style="margin-top:6px;opacity:.7">${w ? esc(w.n) + ' · ' : ''}${new Date(p.date).toLocaleDateString()}${Sync.enabled && p._cb ? ' · added by ' + esc(p._cb) : ''}</div></div>`;
+  v.innerHTML = `<div class="vbar"><button data-v="close">Close</button><span class="vcount small"></span><span class="row"><button data-v="cover">Set as cover</button><button data-v="del">Delete</button></span></div>
+    <div class="vstage"><img alt=""><button class="vnav prev" data-v="prev" aria-label="Previous photo">‹</button><button class="vnav next" data-v="next" aria-label="Next photo">›</button></div>
+    <div class="cap"><input type="text" id="capIn" placeholder="Add a caption" style="background:rgba(255,255,255,.1);color:#fff;border-color:transparent"><div class="small vmeta" style="margin-top:6px;opacity:.7"></div></div>`;
   document.body.appendChild(v);
+  const img = $('img', v), cap = $('#capIn', v); let url = null, seq = 0;
+  const cur = () => S.photos.find(x => x.id === list[i]);
+  async function show() {
+    const p = cur(); if (!p) return; const w = W(p.wid); const my = ++seq;
+    img.src = thumbURL(p); img.alt = p.caption || (w ? w.n : 'Photo');
+    cap.value = p.caption || '';
+    $('.vmeta', v).innerHTML = `${w ? esc(w.n) + ' · ' : ''}${new Date(p.date).toLocaleDateString()}${Sync.enabled && p._cb ? ' · added by ' + esc(p._cb) : ''}`;
+    $('.vcount', v).textContent = list.length > 1 ? `${i + 1} / ${list.length}` : '';
+    $('.prev', v).hidden = i === 0; $('.next', v).hidden = i >= list.length - 1;
+    const full = await fullURL(p.id); if (my !== seq) { if (full) URL.revokeObjectURL(full); return; }
+    if (url) URL.revokeObjectURL(url); url = full; if (full) img.src = full;
+  }
+  const go = d => { const n = i + d; if (n < 0 || n >= list.length) return; i = n; show(); };
+  const close = () => { document.removeEventListener('keydown', onKey); v.remove(); if (url) URL.revokeObjectURL(url); route(); };
+  const onKey = e => { if (e.target === cap) return; if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  let tx = null, ty = 0;
+  img.addEventListener('touchstart', e => { if (e.touches.length === 1) { tx = e.touches[0].clientX; ty = e.touches[0].clientY; } else tx = null; }, { passive: true });
+  img.addEventListener('touchend', e => { if (tx === null) return; const t = e.changedTouches[0]; const dx = t.clientX - tx, dy = t.clientY - ty; tx = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1); }, { passive: true });
   v.addEventListener('click', async e => {
-    const b = e.target.closest('[data-v]'); if (!b) return;
-    if (b.dataset.v === 'close') { v.remove(); if (url) URL.revokeObjectURL(url); route(); }
-    if (b.dataset.v === 'cover') { await setPhotoOrder(p.wid, [p.id, ...photosOf(p.wid).map(x => x.id).filter(x => x !== p.id)]); toast('Cover photo set'); }
-    if (b.dataset.v === 'del') { if (await confirmSheet('Delete this photo?', 'It will be removed from this phone. This cannot be undone.')) { await DB.del('photos', p.id); await DB.del('fulls', p.id); S.photos = S.photos.filter(x => x.id !== p.id); if (st(p.wid).cover === p.id) await setSt(p.wid, { cover: null }); v.remove(); route(); } }
+    const b = e.target.closest('[data-v]'); if (!b) return; const p = cur();
+    if (b.dataset.v === 'close') close();
+    if (b.dataset.v === 'prev') go(-1);
+    if (b.dataset.v === 'next') go(1);
+    if (b.dataset.v === 'cover' && p) { await setPhotoOrder(p.wid, [p.id, ...photosOf(p.wid).map(x => x.id).filter(x => x !== p.id)]); toast('Cover photo set'); }
+    if (b.dataset.v === 'del' && p) {
+      if (!(await confirmSheet('Delete this photo?', 'It will be removed from this phone. This cannot be undone.'))) return;
+      await deletePhoto(p.id); list.splice(i, 1);
+      if (!list.length) { close(); return; }
+      if (i >= list.length) i = list.length - 1; show();
+    }
   });
-  $('#capIn', v).addEventListener('change', async e => { p.caption = e.target.value; await DB.put('photos', p); toast('Caption saved'); });
+  cap.addEventListener('change', async e => { const p = cur(); if (!p) return; p.caption = e.target.value; await DB.put('photos', p); toast('Caption saved'); });
+  show();
 }
+/* the photo set a thumbnail belongs to: its grid or strip, in on-screen order */
+function photoSet(el) {
+  const box = el.closest('.photos, .strip'); if (!box) return [el.dataset.pid];
+  return [...new Set($$('[data-pid]', box).map(x => x.dataset.pid))];
+}
+
+/* carousels: prev/next arrows on every horizontal scroller of cards, badges, or photos */
+const CAR_SEL = '.hcards, .strip, .badges';
+function enhanceCarousels(root) {
+  $$(CAR_SEL, root).forEach(c => {
+    if (c.dataset.car) return; c.dataset.car = '1';
+    const wrap = document.createElement('div'); wrap.className = 'car';
+    c.parentNode.insertBefore(wrap, c); wrap.appendChild(c);
+    const mk = (cls, label, ch) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'carnav ' + cls; b.setAttribute('aria-label', label); b.textContent = ch; wrap.appendChild(b); return b; };
+    const prev = mk('prev', 'Scroll back', '‹'), next = mk('next', 'Scroll forward', '›');
+    const upd = () => { const max = c.scrollWidth - c.clientWidth; prev.hidden = c.scrollLeft <= 4; next.hidden = max <= 4 || c.scrollLeft >= max - 4; };
+    const step = d => c.scrollBy({ left: d * Math.max(80, c.clientWidth * 0.8), behavior: 'smooth' });
+    prev.onclick = e => { e.stopPropagation(); step(-1); }; next.onclick = e => { e.stopPropagation(); step(1); };
+    c.addEventListener('scroll', upd, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(upd).observe(c);
+    $$('img', c).forEach(im => { if (!im.complete) im.addEventListener('load', upd, { once: true }); });
+    upd(); requestAnimationFrame(upd);
+  });
+}
+new MutationObserver(() => enhanceCarousels(document.body)).observe(document.body, { childList: true, subtree: true });
 
 /* ---------------- router ---------------- */
 const view = $('#view');
@@ -1627,7 +1681,7 @@ const ACT = {
   addPhoto: el => pickPhotos(el.dataset.id, null, false),
   camPhoto: el => pickPhotos(el.dataset.id, null, true),
   menuPhoto: el => pickPhotos(el.dataset.id, null, false, null, 'menu'),
-  viewPhoto: el => openViewer(el.dataset.pid),
+  viewPhoto: el => openViewer(el.dataset.pid, photoSet(el)),
   arrange: async el => { const id = el.dataset.id; arrangeFor = arrangeFor === id ? null : id; const y = scrollY; keepScroll = true; await renderWinery(id); keepScroll = false; window.scrollTo(0, y); },
   delPhoto: async el => { if (!(await confirmSheet('Delete this photo?', 'It will be removed from this phone' + (Sync.live() ? ' and the family journal' : '') + '. This cannot be undone.'))) return; const y = scrollY; await deletePhoto(el.dataset.pid); keepScroll = true; await renderWinery(curHash.slice(2)); keepScroll = false; window.scrollTo(0, y); toast('Photo deleted'); },
   wineStar: async el => { const { id, n } = el.dataset; const cur = ((st(id).wines || {})[n] || {}).s; const v = +el.dataset.v === cur ? 0 : +el.dataset.v; await saveWine(id, n, { s: v, t: true }); const row = el.closest('.wine'); row.outerHTML = wineRow(id, n); },

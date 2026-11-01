@@ -613,16 +613,80 @@ window.GUIDE = {
     url:"https://www.exploretock.com/accordwine", urlLabel:"Reservations and experiences" },
 
   { id:"magnolia", n:"Magnolia Vineyards & Winery", town:"Amissville", region:"shen", lat:38.6451442, lng:-78.0319914, tier:"Added Oct 2026",
-    hoursText:"Daily 11:30 AM–5:30 PM (seasonal) · closed Thanksgiving, Christmas Eve, Christmas, and New Year's Day (unless a weekend)",
-    h:"Su-Sa 11:30-17:30", closed:["12-24","12-25"],
-    flights:["Tasting paired with cheeses and chocolates — $15–$19 ($18–$22 for groups of 8+)","Wine flights"],
-    food:"Light fare; cheese-and-chocolate pairings with the tasting. Picnic area.", foodLevel:"snacks", picnic:true,
+    hoursText:"Thu–Mon 11:30 AM–5:30 PM (Tue & Wed closed) · daily June–October · closed Thanksgiving, Christmas Eve, Christmas, and New Year's Day (unless a weekend)",
+    h:"Su-Sa 11:30-17:30", seasons:[{ m:[11,12,1,2,3,4,5], h:"Th-Mo 11:30-17:30" }], closed:["12-24","12-25"],
+    flights:["Wine tasting — 7 or 10 wines (1 oz pours), each paired with a bite of cheese or chocolate","Wine flights — 4 wines (3 oz pours): White, Red, Mixed, or Sweet","Mulled wine — spiced Viognier with apple-cider spices, by the mug, $9","Blush or red sangria by the glass ($9) or carafe ($34)"],
+    experiences:["Pre-made picnic boxes — ask at the counter","Uncle's Kitchen artisanal thin-crust pizza, six kinds ($15–$20)"],
+    food:"Uncle's Kitchen thin-crust pizzas, ham & Gruyère puff-pastry flatbread, cheeses, spreads, meats, crackers, and Walker Bake Shop breads. Picnic boxes available; picnic area.", foodLevel:"kitchen", picnic:true,
     wines:["Cabernet Franc","Petit Verdot","Hawkins Run Red","Petit Manseng","Viognier","Felice Cabernet Franc rosé","Larboard (dessert)"],
-    features:["Mountain views from porch and deck","Covered porch","Picnic area among the vines","Live acoustic music most Saturdays","Seven planted acres, family-owned"],
+    features:["Mountain views from porch and deck","Covered porch","Picnic area among the vines","Live acoustic music most Saturdays, 2–5 PM","Seven planted acres, family-owned","Member of the Skyline Wine Trail and Purely Piedmont"],
     dogs:"Leashed dogs welcome outdoors; must get along with other dogs.", dog:"yes",
     res:"Reservations required for groups of eight or more; small groups walk in.", resLevel:"walkin",
-    why:"Relaxed, intimate, and about 15 minutes from Flint Hill. The food-paired tasting is confirmed; the Old Rag view isn't mentioned in official listings, so check it for yourself.",
-    url:"https://magnoliavineyards.com/", urlLabel:"Official site" },
+    why:"Relaxed, intimate, and about 15 minutes from Flint Hill. Real food now (thin-crust pizza), a 1 oz paired tasting or a 3 oz flight, and Saturday afternoon music. Remember it's closed Tuesdays and Wednesdays from November.",
+    url:"https://magnoliavineyards.com/", urlLabel:"Official site",
+    menu:{ asOf:"2026-11-01", source:"Printed menus and tasting-room boards, photographed on our visit",
+      note:"Discounts: 10% off 6+ bottles and 15% off 12+ · Wine club 15% off bottles, 20% off 6+, 25% off 12+ · Virginia Wine Pass and American Wine Society 10% off bottles (the board says 5% for the Wine Pass — ask) · 10% off for military, veterans, and first responders · ask about industry discounts. Library wines are for Maggie's Wine Club members (limit one per varietal and vintage per visit).",
+      food:[
+        { sec:"Uncle's Kitchen pizza", items:[
+          { n:"Cheese Pizza", p:"$15", d:"Cheese pizza with a little extra flavor." },
+          { n:"Pepperoni Pizza", p:"$17", d:"Their best seller, with deli-sliced pepperoni." },
+          { n:"Sausage Pizza", p:"$17", d:"A 50-year-old Italian sausage recipe." },
+          { n:"Veggie Pizza", p:"$17", d:"Portabella mushroom, red and green bell pepper, onion." },
+          { n:"Supreme Pizza", p:"$19", d:"Portabella, red and green pepper, onion, Italian sausage, Boar's Head pepperoni." },
+          { n:"Meat Lovers Pizza", p:"$20", d:"Ground grass-fed beef, ground pepperoni, ground Italian sausage." } ]},
+        { sec:"Tasting-room specials", items:[
+          { n:"Ham & Gruyère Flatbread", p:"", d:"Puff pastry with ham, Gruyère, Dijon mustard, and balsamic glaze." },
+          { n:"French Baguette (Walker Bake Shop)", p:"$7.50" },
+          { n:"Gouda Onion Sourdough (Walker Bake Shop)", p:"$13" },
+          { n:"Plain Sourdough (Walker Bake Shop)", p:"$13" } ]},
+        { sec:"Specialty cheeses", items:[
+          { n:"Cheese blocks", p:"$10 each", d:"Brie, Balsamic BellaVitano, Black Pepper BellaVitano, Havarti Dill, Irish Cheddar, Merlot BellaVitano, Rosemary Asiago, Tomato Basil BellaVitano." } ]},
+        { sec:"Spreads, meats & crackers", items:[
+          { n:"Cheese spreads & dips", p:"$10 each", d:"Palmetto Pimento Cheese, Spicy Beer Cheese Spread, Growee vegan dips (red pepper, garlic eggplant, or curry zucchini)." },
+          { n:"Meats", p:"$10 / package", d:"Prosciutto, Italian Meat Trio, Smoked Salmon." },
+          { n:"Meat, cheese, and more snack pack", p:"$20" },
+          { n:"Crackers", p:"$7 / box", d:"Firehook Baked (sea salt or rosemary sea salt), Partners Artisan Butter, Milton's Gluten Free." },
+          { n:"Toasted Baguette", p:"$7.50" },
+          { n:"Toasted Artisan Sourdough Loaf", p:"$13" } ]},
+        { sec:"Other snacks", items:[
+          { n:"Divina Marinated Feta & Greek Olives", p:"$7.50" },
+          { n:"Route 11 Potato Chips", p:"$2.50" },
+          { n:"Dried Baby Strawberries", p:"$3.50" },
+          { n:"Chocolate bags", p:"$3.50 or 2 for $6", d:"Sea salt caramel milk chocolate or raspberry-filled dark chocolate." } ]},
+        { sec:"Non-alcoholic", items:[
+          { n:"Hot & cold drinks", p:"$2 each", d:"Coffee, tea, hot chocolate; water, La Croix, Coke, Diet Coke, Sprite, Arizona Green Tea, Pure Leaf Sweet Tea, CapriSun." } ]}
+      ],
+      wine:[
+        { sec:"White", items:[
+          { n:"Black Walnut White", d:"2023 · 85% Traminette, 15% Viognier · lemon, pink grapefruit, light minerality", g:"$9", b:"$28", estate:true },
+          { n:"Vidal Blanc", d:"2023 · 85% Vidal Blanc, 15% Viognier · apple blossom, nectarine, clean melon finish", g:"$9", b:"$29", estate:true },
+          { n:"Viognier", d:"2022 · 100% Viognier · peaches and cream, soft citrus, light minerality", g:"$9", b:"$29", estate:true } ]},
+        { sec:"Rosé", items:[
+          { n:"Battle Mountain Blush", d:"NV · 60% strawberry, 20% Viognier, 20% Vidal Blanc · off-dry, crisp fruity finish (2.4% sugar)", g:"$9", b:"$30", estate:true },
+          { n:"Felice", d:"2023 · 100% Cabernet Franc · medium-bodied dry rosé, berry and light pepper", g:"$9", b:"$28", estate:true } ]},
+        { sec:"Red", items:[
+          { n:"Cabernet Franc", d:"2022 · 90% Cabernet Franc, 10% Petit Verdot · spice, sweet cherry, pepper, vanilla finish", g:"$10", b:"$31", estate:true },
+          { n:"Cabernet Sauvignon", d:"2022 · 90% Cabernet Sauvignon, 10% Petit Verdot · fruity, a hint of leather, long spicy finish", g:"$10", b:"$31", estate:true },
+          { n:"Hawkins Run Red", d:"2022 · 45% Merlot, 25% Cabernet Sauvignon, 15% Cabernet Franc, 15% Petit Verdot · black cherry, spice, savory finish", g:"$10", b:"$32", estate:true },
+          { n:"Petit Verdot", d:"2022 · 100% Petit Verdot · leather, cranberry, black currant, vanilla finish", g:"$10", b:"$34", estate:true },
+          { n:"Pazzo", d:"NV · 50% blackberry wine, 50% Cabernet Franc · semi-sweet, fruity (5% sugar)", g:"$9", b:"$28", estate:true },
+          { n:"Larboard", d:"2021 · 100% Chambourcin · port-style, fortified with Viognier brandy, 3 years in bourbon barrels", g:"$10 (3 oz)", b:"$49", estate:true } ]},
+        { sec:"Other wines", items:[
+          { n:"Petit Manseng", d:"Dry white", g:"$9", b:"$30" },
+          { n:"Sorriso", d:"Dry Cabernet Sauvignon rosé · SOLD OUT", g:"$9", b:"$30" },
+          { n:"Blush Sangria Bottle", d:"To go only", b:"$27" },
+          { n:"Messick's Strawberry Wine", d:"SOLD OUT", g:"$9", b:"$24" } ]},
+        { sec:"Seasonal drinks", items:[
+          { n:"Blush Sangria", d:"Made with Battle Mountain Blush", g:"$9", b:"$34 carafe" },
+          { n:"Red Sangria", d:"By the glass or carafe" },
+          { n:"Mulled Wine", d:"Hot Viognier with apple-cider spices", g:"$9" } ]},
+        { sec:"Library wines (wine club)", items:[
+          { n:"Cabernet Franc (library)", d:"2019, 2020", b:"$40" },
+          { n:"Cabernet Franc Reserve", d:"2019, 2021", b:"$45" },
+          { n:"Cabernet Sauvignon (library)", d:"2018, 2019 $45 · 2020, 2021 $40" },
+          { n:"Hawkins Run Red (library)", d:"2012, 2014 $50 · 2016–2019 $45 · 2020, 2021 $40" },
+          { n:"Petit Verdot (library)", d:"2014, 2015 $50 · 2018, 2019 $45 · 2020, 2021 $40" } ]}
+      ] } },
 
   { id:"ankida-ridge", n:"Ankida Ridge Vineyards", town:"Amherst", region:"ridge", lat:37.708804, lng:-79.173821, tier:"Added Oct 2026",
     hoursText:"Fri–Sun noon–5 PM · Saturdays until 6 PM June–August · Mon–Thu closed",

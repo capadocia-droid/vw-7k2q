@@ -340,7 +340,15 @@ details.more summary::-webkit-details-marker{display:none}
 @keyframes up{from{transform:translateY(40px);opacity:.4}}
 @keyframes fade{from{opacity:0}}
 .viewer{position:fixed;inset:0;z-index:950;background:#000;display:flex;flex-direction:column}
-.viewer img{flex:1;min-height:0;object-fit:contain;width:100%}
+.viewer .vstage{flex:1;min-height:0;position:relative;display:flex}
+.viewer .vstage img{flex:1;min-height:0;min-width:0;object-fit:contain;width:100%;touch-action:pan-y pinch-zoom}
+.viewer .vcount{color:#ccc;font-variant-numeric:tabular-nums}
+.vnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;padding:0 0 4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.vnav.prev{left:10px}.vnav.next{right:10px}
+.vnav[hidden],.carnav[hidden]{display:none}
+.car{position:relative}
+.carnav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:34px;height:34px;border-radius:50%;border:0;background:color-mix(in srgb,var(--ink) 62%,transparent);color:var(--bg);font-size:24px;line-height:1;display:grid;place-items:center;padding:0 0 3px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);-webkit-tap-highlight-color:transparent}
+.carnav.prev{left:-4px}.carnav.next{right:-4px}
 .viewer .vbar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;color:#fff}
 .viewer .vbar button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:999px;padding:8px 13px;font-weight:600;cursor:pointer}
 .viewer .cap{color:#ddd;padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));font-size:14px}
