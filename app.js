@@ -20,6 +20,7 @@ const fmtDate = (s, long) => { if (!s) return ''; const d = fromISO(s); return l
 
 /* ---------------- icons ---------------- */
 const P = {
+  medal: '<circle cx="12" cy="15" r="5"/><path d="M8.5 11 6 3h4l2 5 2-5h4l-2.5 8"/>',
   dog: '<circle cx="6.5" cy="10" r="1.7"/><circle cx="10" cy="6.2" r="1.7"/><circle cx="14.5" cy="6.2" r="1.7"/><circle cx="18" cy="10" r="1.7"/><path d="M12 12c-3 0-5.5 3.4-5.5 5.4 0 1.6 1.3 2.5 2.7 2.2 1-.2 1.8-.6 2.8-.6s1.8.4 2.8.6c1.4.3 2.7-.6 2.7-2.2 0-2-2.5-5.4-5.5-5.4z"/>',
   fork: '<path d="M7 3v7a2 2 0 0 0 4 0V3M9 10v11M17 3c-2 1-3 3.5-3 6.5V13h3v8"/>',
   basket: '<path d="M4 10h16l-1.5 9a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.7z"/><path d="M8 10l3-6M16 10l-3-6"/>',
@@ -654,7 +655,7 @@ const F = { q: '', on: new Set(), region: '', coll: '', sort: 'az' };
 const sortName = w => w.n.replace(/^The\s+/i, '');
 const FILTERS = [
   ['open', 'Open now', 'clock'], ['want', 'Want to go', 'heart'], ['visited', 'Visited', 'check'], ['unvisited', 'Not yet visited', 'mountain'],
-  ['dog', 'Bravo welcome', 'dog'], ['kitchen', 'Food on site', 'fork'], ['picnic', 'Picnic OK', 'basket'], ['walkin', 'Walk-ins OK', 'walk']
+  ['dog', 'Bravo welcome', 'dog'], ['kitchen', 'Food on site', 'fork'], ['picnic', 'Picnic OK', 'basket'], ['walkin', 'Walk-ins OK', 'walk'], ['gold', "Gov's Cup golds", 'medal']
 ];
 function passes(w) {
   const s = st(w.id);
@@ -670,6 +671,7 @@ function passes(w) {
     if (f === 'kitchen' && !['kitchen', 'trucks'].includes(w.foodLevel)) return false;
     if (f === 'picnic' && w.picnic !== true) return false;
     if (f === 'walkin' && w.resLevel !== 'walkin') return false;
+    if (f === 'gold' && !gcOf(w.id).length) return false;
   }
   return true;
 }
@@ -797,6 +799,7 @@ async function renderWinery(id) {
   ${(w.flights || []).length || (w.experiences || []).length ? `<div class="section"><h3>Tastings & flights</h3><div class="card" style="padding:2px 14px"><ul class="plain">${(w.flights || []).map(f => `<li>${esc(f)}</li>`).join('')}${(w.experiences || []).map(f => `<li><span class="chip gold" style="margin-right:6px">Experience</span>${esc(f)}</li>`).join('')}</ul></div></div>` : ''}
   ${w.food ? `<div class="section"><div class="section-head"><h3>Food</h3>${w.menuUrl ? `<a href="${esc(w.menuUrl)}" target="_blank" rel="noopener">Current menu</a>` : ''}</div><p class="prose" style="margin:0">${esc(w.food)}</p></div>` : ''}
   ${menuSection(w)}
+  ${govCupSection(w)}
   <div class="section"><div class="section-head"><h3>Wines to try</h3><span class="small muted">${wineNames.filter(n => (s.wines || {})[n]?.t).length}/${wineNames.length} tasted</span></div>
     <div class="card" style="padding:2px 14px">${wineNames.map(n => wineRow(id, n)).join('') || '<p class="muted small">No wines yet.</p>'}
       <div class="row" style="padding:10px 0;flex-wrap:nowrap"><input type="text" id="newWine" placeholder="Add a wine you tasted"><button class="btn" data-act="addWine" data-id="${id}">${svg('plus')}Add</button></div></div>
@@ -852,10 +855,19 @@ function menuSection(w) {
     ${mp.length ? `<div class="strip">${mp.map(p => `<img src="${thumbURL(p)}" alt="Menu photo" data-act="viewPhoto" data-pid="${p.id}">`).join('')}</div>` : m ? '' : '<div class="empty">No menu yet. Photograph the menu on your visit, then send the photos to Claude to have it typed into the guide.</div>'}
   </div>`;
 }
-function wineRow(id, n) {
+const GC_TAG = { cup: ['🏆', 'Governor\'s Cup'], case: ['📦', 'Governor\'s Cup Case'], bis: ['⭐', 'Best in Show'], '': ['🏅', 'Gold'] };
+const gcOf = id => ((window.GUIDE.govCup || {}).wineries || {})[id] || [];
+function govCupSection(w) {
+  const g = gcOf(w.id); if (!g.length) return '';
+  const gc = window.GUIDE.govCup; const top = g.find(x => x[1] === 'cup') ? 'Won the Governor\'s Cup' : g.some(x => x[1] === 'case') ? 'In the Governor\'s Cup Case' : g.some(x => x[1] === 'bis') ? 'Best in Show' : `${g.length} gold${g.length > 1 ? 's' : ''}`;
+  return `<div class="section"><div class="section-head"><h3>${gc.year} Governor's Cup</h3><span class="small muted">${esc(top)}</span></div>
+    <div class="card" style="padding:2px 14px">${g.map(([n, t]) => wineRow(w.id, n, `<span class="gctag" title="${GC_TAG[t][1]}">${GC_TAG[t][0]} ${GC_TAG[t][1]}</span>`)).join('')}</div>
+    <span class="small muted">Gold-medal wines; small lots sell out, so ask what's still pouring. <a href="${esc(gc.url)}" target="_blank" rel="noopener">Full results</a></span></div>`;
+}
+function wineRow(id, n, tag = '') {
   const x = (st(id).wines || {})[n] || {};
   return `<div class="wine"><input type="checkbox" class="check" ${x.t ? 'checked' : ''} data-wine-t="${esc(n)}" data-id="${id}" aria-label="Tasted ${esc(n)}">
-    <button class="wn linkbtn" style="color:var(--ink);text-align:left" data-act="wineNote" data-id="${id}" data-n="${esc(n)}">${esc(n)}${x.v ? ` <span class="muted mono small">${esc(x.v)}</span>` : ''}</button>
+    <button class="wn linkbtn" style="color:var(--ink);text-align:left" data-act="wineNote" data-id="${id}" data-n="${esc(n)}">${esc(n)}${x.v ? ` <span class="muted mono small">${esc(x.v)}</span>` : ''}${tag ? `<br>${tag}` : ''}</button>
     ${starsHTML(x.s, 'wineStar', `data-id="${id}" data-n="${esc(n)}"`)}
     ${x.note ? `<div class="wnote">${esc(x.note)}</div>` : ''}</div>`;
 }

@@ -901,3 +901,49 @@ window.GUIDE.addr = {
 
 /* Pins checked against Google-based listings (Wanderlog, Pearl), Winemaps and Roadtrippers, Oct 29 2026; the phone never moves these */
 window.GUIDE.pinsVerified = ["50-west", "accord", "afton-mountain", "ankida-ridge", "arterra", "barboursville", "blue-quartz", "bluemont", "boxwood", "breaux", "cana", "chester-gap", "chrysalis", "crimson-lane", "crosskeys", "delaplane-cellars", "doukenie", "ducard", "early-mountain", "gadino", "glen-manor", "granite-heights", "gray-ghost", "greenhill", "hazy-mountain", "jefferson", "keswick", "king-family", "la-grange", "linden", "magnolia", "michael-shaps", "mountain-run", "muse", "narmada", "pippin-hill", "pollak", "quievremont", "rappahannock-cellars", "revalation", "septenary", "slater-run", "stone-tower", "sugarloaf", "sunset-hills", "three-fox", "valley-road", "veritas", "walsh"];
+
+/* 2026 Virginia Governor's Cup gold medals at guide wineries (results announced March 2026).
+   tag: "cup" = Governor's Cup winner, "case" = Governor's Cup Case (top 12), "bis" = Best in Show, "" = gold. */
+window.GUIDE.govCup = {
+  year: 2026,
+  url: "https://wineandcountrylife.com/2026-governors-cup-gold/",
+  wineries: {
+    "valley-road": [["2023 Cabernet Franc Reserve", "cup"], ["2021 Meritage", ""], ["2024 Albariño", ""]],
+    "barboursville": [["2024 Vermentino", "case"], ["2019 Octagon", ""], ["2020 Octagon", ""]],
+    "pollak": [["2023 Merlot Reserve", "case"], ["2023 Chardonnay Reserve", ""], ["2023 Nebbiolo", ""]],
+    "michael-shaps": [["2023 Cabernet Franc", "case"], ["2023 Chardonnay", ""], ["2023 En Hommage L Scott", ""]],
+    "pippin-hill": [["2024 Sauvignon Blanc", "bis"], ["2024 Petit Manseng", ""], ["2023 Cabernet Franc Reserve", ""], ["2021 Cabernet Franc Ridge Reserve", ""]],
+    "hark": [["2022 Ember", "bis"], ["2022 Spark", ""], ["2023 Cabernet Franc", ""], ["2023 Petit Verdot", ""], ["2024 Roussanne", ""]],
+    "ducard": [["2023 Cabernet Franc", ""], ["2023 Cabernet Franc Vintners Reserve", ""], ["2023 Triskele", ""]],
+    "veritas": [["2023 Veritas Reserve", ""], ["2023 Monticello White", ""], ["Scintilla", ""]],
+    "jefferson": [["2022 Meritage", ""], ["2023 Meritage", ""], ["2023 Viognier", ""]],
+    "king-family": [["2023 Brut Rosé", ""], ["2023 Merlot", ""]],
+    "early-mountain": [["2021 Eluvium", ""], ["2022 Novum", ""]],
+    "southwest-mountains": [["2023 Chardonnay Reserve", ""], ["2023 Viognier", ""]],
+    "keswick": [["2024 Cabernet Franc", ""], ["2024 Petit Manseng", ""]],
+    "afton-mountain": [["2019 T", ""], ["2024 Albariño", ""]],
+    "merrie-mill": [["2022 Red Blend", ""]],
+    "revalation": [["2023 Cabernet Franc", ""]],
+    "glen-manor": [["2023 Vin Rouge", "case"]],
+    "granite-heights": [["2024 Humility", "case"], ["2022 Humility", ""], ["2021 Merlot", ""]],
+    "capstone": [["2023 Francis", ""], ["2023 Merlot", ""], ["2023 St. Dominic", ""]],
+    "narmada": [["2021 Melange", ""], ["2021 Merlot", ""], ["2023 Reflection", ""]],
+    "accord": [["2023 Merlot", ""], ["2024 Fiery Run Chardonnay", ""]],
+    "gadino": [["2021 Merlot", ""], ["2024 Pinot Grigio", ""]],
+    "delaplane-cellars": [["2023 Rusticity", ""]],
+    "mountain-run": [["2022 Meritage", ""]],
+    "la-grange": [["2024 Petit Manseng", "case"], ["2022 Petit Verdot", ""], ["2024 Rosé", ""]],
+    "walsh": [["2021 Bethany Ridge Tannat", "bis"]],
+    "50-west": [["2024 Vidal Blanc", "bis"], ["2023 Cabernet Franc", ""]],
+    "chrysalis": [["2022 Norton", "bis"], ["2024 Albariño", ""], ["2024 Albariño Verde", ""]],
+    "cana": [["2022 Petit Verdot", ""]],
+    "breaux": [["2021 Meritage", ""]],
+    "greenhill": [["2023 Cabernet Franc", ""]],
+    "sunset-hills": [["2023 Cabernet Franc", ""]],
+    "doukenie": [["2021 Merlot", ""]],
+    "slater-run": [["2025 Pétillant Naturel Sparkling Rosé", ""]],
+    "crosskeys": [["2024 Cabernet Franc", "case"], ["2024 Casa Nikoo", ""], ["2024 Oaked Chardonnay", ""], ["Blanc de Noir", ""]],
+    "muse": [["2021 Cabernet Sauvignon", ""], ["2021 Petit Verdot", ""], ["2022 Vin Gris de Gamay", ""]],
+    "ankida-ridge": [["2024 Chardonnay", ""]]
+  }
+};
