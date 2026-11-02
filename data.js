@@ -705,26 +705,26 @@ window.GUIDE = {
           { n:"Core Sparkling Cider", d:"dry, crisp · apple, ginger", b:"$35" } ]}
       ] } },
 
-  { id:"silver-dog", n:"Silver Dog Vineyards", town:"Linden", region:"shen", lat:38.9043649, lng:-78.0795624, tier:"Added Nov 2026", status:"Soft opening — tasting room still being finished",
-    hoursText:"Fri 2–6 PM · Sat 11 AM–6 PM (Google shows noon) · Sun 11 AM–6 PM · Mon–Thu closed · soft-opening hours, confirm before going",
+  { id:"silver-dog", n:"Silver Dog Vineyards", town:"Linden", region:"shen", lat:38.9043649, lng:-78.0795624, tier:"Added Nov 2026", status:"Open — tasting room still getting finishing touches",
+    hoursText:"Fri 2–6 PM · Sat & Sun 11 AM–6 PM · Mon–Thu closed",
     h:"Fr 14:00-18:00|Sa 11:00-18:00|Su 11:00-18:00",
-    flights:["Sneak Peek Wine Tasting — five estate wines with small bites on the outdoor deck (book on Tock; reservation is free)","Wines also by the glass or bottle"],
-    food:"Small bites with the tasting; charcuterie and cheese available afterward.", foodLevel:"snacks", picnic:false,
+    flights:["5-wine tasting flight, $35 — 2023 Chardonnay, 2024 Petit Manseng, 2024 Rosé, 2023 Rock Island Red (plus 2023 Barbera available); a staff member walks you through it at your seat","Every flight wine and the Barbera also by the glass or bottle"],
+    food:"Charcuterie boards, olives and other small bites; a bigger food menu is planned.", foodLevel:"snacks", picnic:false,
     wines:["2023 Chardonnay (Governor's Cup Silver) — Chablis-leaning: citrus, green apple, baking spice; new French oak and steel","2024 Petit Manseng — lean, tart citrus and pineapple","2024 Rosé — 70% Cabernet Sauvignon, 30% Barbera, Spanish-rosado style","2023 Rock Island Red — Barbera, Cabernet Sauvignon, Petit Verdot, Sagrantino; 18 months French oak (the star)","2023 Barbera"],
-    features:["Estate-only, small-batch, low-intervention wines (first vintage 2023)","Rare Italian grapes: Barbera and Sagrantino","Virginia's first off-grid tasting room: solar power, well and spring water, rainwater capture","Contemporary, landscape-hugging tasting room designed by architect-owner Eric Gronning","Deck views over Capstone and Crimson Lane to the mountains","Near 1,200 ft elevation; steep drive up the mountain","Owners Eric Gronning and Lori Robertson (formerly ran DC wine bar Maple); named for their dog, Silver"],
-    dogs:"Leashed dogs welcome.", dog:"yes", adults:true,
-    res:"Reservations recommended and free on Tock; 21+ only; parties of six or fewer; $10/person fee for cancellations inside 24 hours. Restroom is a high-end portable unit until the building is done.", resLevel:"recommended",
+    features:["18-acre estate in the Shenandoah AVA, Blue Ridge foothills; one of five wineries within a few miles in Linden","Estate-grown only, small-batch, low-intervention wines; first vintage 2023","Rare Italian grapes: Barbera and Sagrantino (Umbrian), alongside Cab Sauv, Cab Franc, Merlot, Petit Verdot, Chardonnay, Petit Manseng","Virginia's first off-grid tasting room: solar power, well and spring water, rainwater capture; glass, steel, concrete and cedar","Tasting room designed and built by owner Eric Gronning, an architect (Gronning Architects, DC)","Seating at the indoor bar and tables, on the deck under a trellis or in full sun, lounge chairs on gravel, and a lawn","Valley and mountain views","Owners Eric Gronning and Lori Robertson ran DC wine bar Maple for seven years; bought the land in 2018 and named it for their dog, Silver"],
+    dogs:"Dogs welcome — on leash at all times, and pick up after them.", dog:"yes", adults:true,
+    res:"Reservations recommended and free on Tock. Cancel by the day before. 21+ only. Call or email for parties over 8. ⚠️ Don't navigate by name or address — both land at neighbors' houses. From DC/east: I-66 W exit 18 (Markham), Rt 55 W ~4 mi, left on Rt 638 Fiery Run (the first one, at the convenience store and The Giving Tree market — not the second), ~¼ mi over the rail bridge, right on gravel Feathers Lane (sign). Up the hill, turn LEFT at the red gated fence (don't go through the gate), over the cattle guard to the parking lot. From the west: I-66 E exit 13 (Linden), Rt 55 E ~2 mi, right on 638, then the same.", resLevel:"recommended",
     why:"Linden's newest winery, right between Capstone and Crimson Lane: an architect's off-grid tasting room, Italian grapes nobody else in the area grows, and early reviews that are uniformly glowing. Easy to add to a Capstone visit.",
-    url:"https://www.exploretock.com/silverdogvineyards", urlLabel:"Reservations (Tock)", menuUrl:"https://www.silverdogvineyards.com/",
-    menu:{ asOf:"2026-11-01", source:"Virginia Wine Time review (Aug 2026) and winery site",
-      note:"Winemaker Shai Van Gelder, per Virginia Wine Time; Eric Gronning grows the grapes. Planted: Chardonnay, Petit Manseng, Barbera, Sagrantino, Cabernet Franc, Cabernet Sauvignon, Merlot, Petit Verdot. Prices not yet published. Phone (540) 914-9344 · info@silverdogvineyards.com.",
+    url:"https://www.exploretock.com/silverdogvineyards/detail/546967/sneak-peek-wine-tasting", urlLabel:"Reservations (Tock)", menuUrl:"https://www.silverdogvineyards.com/visit",
+    menu:{ asOf:"2026-11-01", source:"silverdogvineyards.com (Visit and Our Story pages); tasting notes from Virginia Wine Time review (Aug 2026)",
+      note:"Flight $35 for five wines; glass and bottle prices not published. Eric Gronning grows the grapes; winemaker Shai Van Gelder per Virginia Wine Time. 139 Feathers Lane, Linden VA 22642 · (540) 914-9344 · info@silverdogvineyards.com · Instagram @silver_dog_vineyards.",
       wine:[
-        { sec:"White & rosé", items:[
+        { sec:"Tasting flight — 5 wines, $35", items:[
           { n:"2023 Chardonnay", d:"2026 Governor's Cup Silver · new French oak and stainless steel · citrus, green apple, baking spice; medium body, crisp finish" },
           { n:"2024 Petit Manseng", d:"lean · tart citrus, pineapple, sharp acidity" },
-          { n:"2024 Rosé", d:"70% Cabernet Sauvignon, 30% Barbera · cherry, pomegranate, stone fruit; dry and weighty" } ]},
-        { sec:"Red", items:[
-          { n:"2023 Rock Island Red", d:"36% Barbera, 28% Cabernet Sauvignon, 22% Petit Verdot, 14% Sagrantino · 18 months new and neutral French oak · dark plum, blackberry, spice; still evolving" },
+          { n:"2024 Rosé", d:"70% Cabernet Sauvignon, 30% Barbera · cherry, pomegranate, stone fruit; dry and weighty" },
+          { n:"2023 Rock Island Red", d:"36% Barbera, 28% Cabernet Sauvignon, 22% Petit Verdot, 14% Sagrantino · 18 months new and neutral French oak · dark plum, blackberry, spice; still evolving" } ]},
+        { sec:"Also by the glass or bottle", items:[
           { n:"2023 Barbera", d:"cherry, blackberry, fleshy plum, hint of spice" } ]}
       ] } },
 
