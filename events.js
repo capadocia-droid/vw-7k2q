@@ -1,4 +1,4 @@
-/* Winery events and notices (winery calendars and regional listings), checked Oct 28, 2026. Replace this file to update. */
+/* Winery events and notices (winery calendars and regional listings), checked Oct 28, 2026; Accord additions Nov 1, 2026. Replace this file to update. */
 window.EVENTS = {
   asOf: "2026-10-28",
   items: [
@@ -46,6 +46,7 @@ window.EVENTS = {
     {"k": "e", "w": "doukenie", "t": "Post Harvest Wine Dinner", "d": "2026-11-07", "c": "wine_dinner", "s": "18:30", "et": "21:00", "u": "https://www.virginiawineexperiences.com/events", "st": "confirm_details"},
     {"k": "a", "w": "barboursville", "t": "Early Closure", "d": "2026-11-07", "c": "early_closure", "x": "Discovery Tasting Room final tasting 2:30 pm; closes 3:30 pm", "u": "https://www.bbvwine.com/tour-tasting/tasting-room"},
     {"k": "a", "w": "cana", "t": "Early Closure", "d": "2026-11-07", "c": "early_closure", "x": "Tasting room closes 3:30 pm, last call 3 pm; cafe closes 3 pm", "u": "https://canavineyards.com/calendar/closing-early-for-a-private-event-23/"},
+    {"k": "e", "w": "accord", "t": "Paired Accordingly: Creative Roots", "d": "2026-11-07", "c": "special_tasting", "s": "12:30", "x": "Creative bites built around root vegetables, each matched to a wine", "u": "https://www.exploretock.com/accordwine"},
     {"k": "e", "w": "la-grange", "t": "Riedel Glass Seminar", "d": "2026-11-08", "c": "special_tasting", "s": "11:00", "x": "Tasting with Riedel representative; glass set to take home", "p": 120, "u": "https://wineryatlagrange.com/events-1"},
     {"k": "e", "w": "crosskeys", "t": "Vineyard Vibes: Pat Anderson", "d": "2026-11-08", "c": "live_music", "s": "12:00", "et": "15:00", "u": "https://crosskeysvineyards.com/events/"},
     {"k": "e", "w": "la-grange", "t": "The Book Cellar book club", "d": "2026-11-08", "c": "social", "s": "12:00", "et": "13:00", "x": "Free registration; complimentary glass with registration", "u": "https://wineryatlagrange.com/events-1"},
@@ -53,6 +54,7 @@ window.EVENTS = {
     {"k": "e", "w": "doukenie", "t": "Live music at Doukénie", "d": "2026-11-08", "c": "live_music", "s": "14:00", "et": "17:00", "x": "Scheduled performer varies by date; regional calendar listing", "u": "https://www.virginiawineexperiences.com/events", "st": "confirm_details"},
     {"k": "e", "w": "jefferson", "t": "Music at Jefferson Vineyards", "d": "2026-11-08", "c": "live_music", "s": "14:00", "et": "16:00", "x": "Music Nov 1,8,15 2–4pm; Nov 6,13 4–6pm, with rotating trucks", "u": "https://www.monticello.org/visit/jefferson-vineyards-wine/music-at-jefferson-vineyards"},
     {"k": "a", "w": "crimson-lane", "t": "Partial Closure", "d": "2026-11-08", "c": "partial_closure", "x": "Main Tasting Room and covered porches closed to public for wine-club pickup party", "u": "https://crimsonlanevineyards.com/events/"},
+    {"k": "e", "w": "accord", "t": "Paired Accordingly: Creative Roots", "d": "2026-11-08", "c": "special_tasting", "s": "12:30", "x": "Creative bites built around root vegetables, each matched to a wine", "u": "https://www.exploretock.com/accordwine"},
     {"k": "e", "w": "king-family", "t": "Wine Wednesday: food trucks and trivia", "d": "2026-11-11", "c": "food_and_music", "s": "16:30", "et": "20:30", "x": "Food trucks approximately 4–7:30pm; trivia from 6pm; dates officially posted", "u": "https://kingfamilyvineyards.com/event-calendar/"},
     {"k": "e", "w": "jefferson", "t": "Music at Jefferson Vineyards", "d": "2026-11-13", "c": "live_music", "s": "16:00", "et": "18:00", "x": "Music Nov 1,8,15 2–4pm; Nov 6,13 4–6pm, with rotating trucks", "u": "https://www.monticello.org/visit/jefferson-vineyards-wine/music-at-jefferson-vineyards"},
     {"k": "e", "w": "crosskeys", "t": "Harvest Wine Dinner", "d": "2026-11-13", "c": "wine_dinner", "s": "18:00", "x": "Seven-course paired dinner; winery listing has discrepancy for end time", "u": "https://crosskeysvineyards.com/events/"},

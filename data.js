@@ -23,7 +23,7 @@ window.GUIDE = {
     food:    { title: "Food is part of the experience", ids: ["three-fox","pippin-hill","early-mountain","barboursville","chrysalis","cana","merrie-mill","stone-tower","blue-quartz"] },
     gems:    { title: "Hidden gems", ids: ["glen-manor","capstone","granite-heights","revalation","septenary","walsh","hark","ankida-ridge"] },
     bravo:   { title: "Best with Bravo", ids: ["ducard","three-fox","keswick","chester-gap","king-family","glen-manor","blue-quartz","afton-mountain","breaux","walsh","rappahannock-cellars","jefferson"] },
-    added:   { title: "Newest additions", ids: ["hark","accord","keswick","muse","magnolia","ankida-ridge","12-ridges","crosskeys","jefferson","narmada","gadino","arterra","gray-ghost","doukenie"] },
+    added:   { title: "Newest additions", ids: ["silver-dog","hark","accord","keswick","muse","magnolia","ankida-ridge","12-ridges","crosskeys","jefferson","narmada","gadino","arterra","gray-ghost","doukenie"] },
     glist:   { title: "On our Google Maps list", ids: ["rappahannock-cellars","chester-gap","linden","quievremont","crimson-lane","capstone","three-fox","lost-mountain","mountain-run","revalation","greenhill","bluemont","early-mountain","barboursville","southwest-mountains","sugarloaf","king-family","pollak","pippin-hill","veritas","afton-mountain"] },
     plan:    { title: "Needs extra planning", ids: ["crimson-lane","lost-mountain","linden","granite-heights"] }
   },
@@ -259,14 +259,40 @@ window.GUIDE = {
   { id:"capstone", n:"Capstone Vineyards", town:"Linden", region:"shen", lat:38.9152, lng:-78.0605, tier:"Tier 1",
     hoursText:"Thu, Sun, Mon noon–5 PM · Fri–Sat noon–6 PM · Tue–Wed by special arrangement",
     h:"Th,Su,Mo 12:00-17:00|Fr,Sa 12:00-18:00",
-    flights:["Guided four-wine tasting — $25"],
-    food:"Cheese and charcuterie; personal picnics permitted.", foodLevel:"snacks", picnic:true,
-    wines:["Estate red blends","Reserve selections","Limited-production reds"],
-    features:["Small mountainside estate","Elevated vineyard setting","Excellent views","Talk directly with owner-winemaker Theo"],
+    flights:["Tasting menu — $25: 2025 Sparkling Cider, 2025 Chardonnay, 2024 Merlot, 2024 Cabernet Franc","Additional wines by the glass: 2023 Sparkling Chardonnay (traditional method), 2025 Sparkling Rosé, 2025 Muscat Ottonel"],
+    experiences:["Free wine club: six pickups a year (3, 6 or 12 bottles at 5/10/15% off), 2 complimentary tastings or glasses per pickup, club events, priority on library wines","Club-only bottles: Lucienne, Francis, Blue, 2023 Merlot, 2023 Cabernet Franc","Annual Hog Harvest (mid-October): live music and BBQ","Cider special: six bottles of 2025 Sparkling Cider for the price of five ($145)"],
+    food:"Local Virginia Board ($30): local salami, pimento cheese, pickles and peanuts with local crackers. Personal picnics permitted.", foodLevel:"snacks", picnic:true,
+    wines:["Francis (Bordeaux-style red blend — 2023 Governor's Cup Gold)","St. Dominic (2023 Governor's Cup Gold)","Merlot (2023 Governor's Cup Gold)","Lucienne (Roussanne–Chenin Blanc white)","Blue (Cabernet Sauvignon–led red)","Cabernet Franc","Traditional-method Sparkling Chardonnay (38 months on the yeast)","Acadian-style sparkling cider","Muscat Ottonel (off-dry)"],
+    features:["Small mountainside estate","Elevated vineyard setting","Excellent views","Talk directly with owner-winemaker Theo","Detailed tasting notes with oak regimes on the menu","Neighbors Crimson Lane, Linden and the new Silver Dog"],
     dogs:"Leashed dogs welcome outdoors.", dog:"yes",
     res:"Strongly recommended during busy or cold-weather periods.", resLevel:"recommended",
     why:"One of our highest-priority undiscovered gems. Small, personal, scenic, and wine-focused — promising given our love of DuCard.",
-    url:"https://capstonevineyards.com/our-tasting-room", urlLabel:"Tastings and hours" },
+    url:"https://capstonevineyards.com/our-tasting-room", urlLabel:"Tastings and hours",
+    menu:{ asOf:"2026-11-01", source:"Tasting-room menu (our photos)",
+      note:"The $25 tasting covers the four tasting-menu wines. Club wines are sold by the bottle only. Club 2026 pickups: Jan '23 Francis, '24 Lucienne, '25 Rosé · Mar '25 Sparkling Rosé, '25 Sparkling Cider, '24 Merlot · May '25 Sauvignon Blanc, '25 Blanc de Franc, '24 Cabernet Franc · Jul '25 Still Chardonnay, '25 Sparkling Rosé, '24 Blue · Sep '25 Lucienne, '24 Francis, '23 Francis · Nov '23 Sparkling Chardonnay, '23 St. Dominic, '24 Petit Verdot.",
+      food:[
+        { sec:"Fare", items:[
+          { n:"Local Virginia Board", p:"$30", d:"Locally sourced salami, pimento cheese, pickles and peanuts, with local crackers. Contains peanuts." } ]},
+        { sec:"Specials", items:[
+          { n:"Cider half case", p:"$145", d:"Six bottles of 2025 Sparkling Cider for the price of five." } ]}
+      ],
+      wine:[
+        { sec:"Tasting menu ($25 tasting)", items:[
+          { n:"2025 Sparkling Cider", d:"Acadian style; Harrison, Arkansas Black, Black Twig, Goldrush and Winesap apples; tank-fermented, forced carbonation · nose green melon, hibiscus, cantaloupe · palate candied lemon peel, chamomile, sweet tarts", g:"$11", b:"$29" },
+          { n:"2025 Chardonnay", d:"9 months in neutral French oak · nose mandarin, chamomile, pencil shavings · palate dried fig, white cherry, plum", g:"$15", b:"$45" },
+          { n:"2024 Merlot", d:"14 months French oak (23% new) · nose anise, black cherry, balsam · palate blackberry, cola, candied strawberry", g:"$15", b:"$50" },
+          { n:"2024 Cabernet Franc", d:"14 months French oak (33% new) · nose nutmeg, lavender, black plum · palate Tootsie Roll, plum, leather", g:"$15", b:"$50" } ]},
+        { sec:"Additional wines (glass or bottle)", items:[
+          { n:"2023 Sparkling Chardonnay", d:"Champagne method; 10 months neutral French oak, 38 months on the yeast · nose brioche, lime blossom, crème brûlée · palate lemon zest, apple tart, meringue", g:"$18", b:"$68" },
+          { n:"2025 Sparkling Rosé", d:"100% Merlot, 5 months in steel, forced carbonation · nose orange blossom, strawberry, papaya · palate grapefruit, cantaloupe, pomegranate", g:"$15", b:"$45" },
+          { n:"2025 Muscat Ottonel", d:"9 months in steel; off-dry (8 g/L residual sugar) · nose lemon balm, Froot Loops, orange zest · palate crème fraîche, vanilla bean, honeysuckle", g:"$15", b:"$38" } ]},
+        { sec:"Club wines (bottle only)", items:[
+          { n:"2025 Lucienne", d:"67% Roussanne, 33% Chenin Blanc; 10 months neutral French oak · nose apricot, lemon balm, thyme · palate lemon, almond, beeswax", b:"$44" },
+          { n:"2024 Francis", d:"31% Merlot, 26% Cabernet Sauvignon, 24% Cabernet Franc, 19% Petit Verdot; 10 months French oak · nose plum, goji berry, clove · palate cherry, black cardamom, hearth", b:"$55" },
+          { n:"2023 Merlot", d:"2026 Governor's Cup Gold · 10 months French oak", b:"$50" },
+          { n:"2024 Blue", d:"87% Cabernet Sauvignon, 9% Cabernet Franc, 4% Petit Verdot; 10 months French oak · price not legible on our photo" },
+          { n:"2023 Cabernet Franc", d:"10 months French oak · nose bay leaf, red licorice, wet clay · palate mint jelly, roast coffee bean, black currant", b:"$50" } ]}
+      ] } },
 
   { id:"50-west", n:"50 West Vineyards", town:"Middleburg", region:"hunt", lat:38.981214, lng:-77.658288, tier:"Tier 1",
     hoursText:"Mon & Thu noon–5 PM · Fri noon–8 PM · Sat 11 AM–8 PM · Sun 11 AM–6 PM (some pages show shorter evenings)",
@@ -602,34 +628,34 @@ window.GUIDE = {
   { id:"accord", n:"Accord Vineyards", aka:"Formerly Fox Meadow", town:"Linden", region:"shen", lat:38.935282, lng:-78.047744, tier:"Added Oct 2026",
     hoursText:"Mon, Tue, Thu noon–5 PM · Fri & Sun noon–6 PM · Sat noon–7 PM · Wed closed · last call 30 min before closing · closed Thanksgiving, Christmas Eve, Christmas",
     h:"Mo,Tu,Th 12:00-17:00|Fr,Su 12:00-18:00|Sa 12:00-19:00", closed:["12-24","12-25"],
-    flights:["Autumn Tasting — $20 (4 wines, 1.5 oz pours)","Dry White Tasting — $25","Dry Red Tasting — $30","Sweet Wine Tasting — $25","Guided Tasting — $35 (staff-led, matched to your taste; weekdays and select weekends)"],
-    experiences:["Through the Vines private tour & tasting — $55 (seasonal, Aug–Nov)","Vineyard walk & tasting — $65 (seasonal)","Paired tastings and vineyard dinners on select dates"],
+    flights:["Autumn Tasting — $20: 2024 Élevage Chardonnay, 2025 Vidal Blanc, 2024 Pinot Grigio, 2023 Merlot (1.5 oz pours)","Dry White Tasting — $25: 2022 Barrel Fermented Chardonnay, 2024 Le Renard Gris, 2024 Fiery Run Chardonnay, 2024 Petit Manseng","Chardonnay Tasting — $25: 2024 Élevage, 2022 Barrel Fermented, 2024 Fiery Run, 2024 Trail Blaze","Dry Red Tasting — $30: Situationally Dependent, 2023 Cabernet Sauvignon, 2023 Le Renard Rouge, 2022 Petit Verdot","Sweet Wine Tasting — $25: Blue Mountain Mist, Freezeland White, Pêche Blanc, Freezeland Red","Guided Tasting — $35 (staff-led, matched to your taste; weekdays and select weekends)"],
+    experiences:["Through the Vines private tour & tasting — $55 (seasonal, Aug–Nov)","Vineyard walk & tasting — $65 (seasonal)","Paired Accordingly food-and-wine pairings (e.g. \"Creative Roots\", root-vegetable bites, Nov 7–8, 12:30 PM)","Seasonal events: Movies on the Mountain, Sip & Stitch craft afternoons, Sunset in the Vineyard late openings with live music and a food truck"],
     food:"Charcuterie boards (most weekends), cheese and snack boards, warm pretzels, add-ons, and desserts, with table service in the tasting room and on the deck. Outside food only in the picnic area; no outside alcohol.", foodLevel:"snacks", picnic:true,
-    wines:["Merlot (2023 — Governor's Cup Gold)","Fiery Run Chardonnay (2024 — Governor's Cup Gold)"],
-    features:["Atop Blue Mountain","Panoramic Blue Ridge views","Cool mountain breezes","Deck and picnic area","Library room (21+)"],
+    wines:["Merlot (2023 — Governor's Cup Gold)","Fiery Run Chardonnay (2024 — Governor's Cup Gold)","Four Chardonnays: Élevage, Barrel Fermented, Fiery Run, Trail Blaze","Le Renard Gris (Pinot Grigio–Chardonnay–Riesling blend)","Petit Manseng","Petit Verdot and Le Renard Rouge","2023 Ascend méthode champenoise sparkling"],
+    features:["Atop Blue Mountain","Panoramic Blue Ridge views","Cool mountain breezes","Deck and picnic area","Library room (21+)","Espresso drinks and hot chocolate for non-drinkers","Bottle discounts: 10% off 6+, 15% off 12+ (members 15% / 20% off 12+)"],
     dogs:"Leashed pets welcome on the deck and in the picnic areas, not inside.", dog:"limited",
     res:"Reservations encouraged on weekends. Groups capped at eight ($20/person minimum; 20% gratuity for 6+). Main tasting room is 13+.", resLevel:"recommended",
     why:"Confirmed: one of the most elevated tasting decks near Front Royal, with two 2026 Governor's Cup golds. Ten minutes from Chester Gap and Linden — easy to pair on one day.",
     url:"https://www.exploretock.com/accordwine", urlLabel:"Reservations and experiences", menuUrl:"https://www.accordwine.com/our-menu",
-    menu:{ asOf:"2026-11-01", source:"Winery's online menu and wine list",
-      note:"Tastings are 1.5 oz pours; each wine notes which tasting it's in. Table service in the tasting room and on the deck; food can go to the picnic area.",
+    menu:{ asOf:"2026-11-01", source:"Winery's online menu, checked against our tasting-room photos",
+      note:"Tastings are 1.5 oz pours; each wine notes which tasting it's in. Table service in the tasting room and on the deck; food can go to the picnic area. Bottles: 10% off 6+, 15% off 12+; members always 15% off, 20% off 12+.",
       food:[
         { sec:"Charcuterie boards (most weekends)", items:[
-          { n:"Small Charcuterie Board", p:"$45", d:"Serves 1–2. Two salamis, three cheeses, olives, preserves, three crackers, chocolate-covered almonds, fruit." },
+          { n:"Small Charcuterie Board", p:"$45", d:"Serves 1–2. Salami, olives, cornichons, three cheeses, crackers, chutney, chocolate almonds, fruit." },
           { n:"Large Charcuterie Board", p:"$80", d:"Serves 3–4. Same lineup, bigger." } ]},
         { sec:"Cheese boards", items:[
           { n:"Locksley Farmstead Cheese Plate", p:"$20", d:"Local hard cheeses with Firehook crackers." },
           { n:"Tuscan Cheddar & Crackers", p:"$15", d:"Cabot Tuscan Italian-herb cheddar with Carr's crackers." },
-          { n:"Happy Creek Goat Cheese Spread", p:"$10", d:"Honey, or onion and chive, with half a baguette." },
-          { n:"Warm Camembert", p:"$15", d:"With local honey and almonds, or fig preserves and pistachios; half baguette." },
-          { n:"Warm Bavarian Pretzels", p:"$15", d:"With Birdie's pimento cheese, classic or smoked gouda." } ]},
+          { n:"Happy Creek Goat Cheese", p:"$10", d:"Honey, chive & onion, or cranberry walnut, with a warm half baguette." },
+          { n:"Warm Camembert & ½ Baguette", p:"$20", d:"Local honey and almonds, or fig and pistachio (contains nuts)." },
+          { n:"Birdie's Pimento Cheese", p:"$16", d:"Classic, or smoked gouda & red pepper, with warm Bavarian pretzels." } ]},
         { sec:"Snack boards", items:[
-          { n:"Warm Half Baguette", p:"$6", d:"Olive oil and herbs." },
+          { n:"Warm Baguette", p:"$4 half / $7 full", d:"Add olive oil and herbs, +$2." },
           { n:"Tomato Parmesan Dip", p:"$15", d:"With a warm half baguette." },
-          { n:"Hummus", p:"$20", d:"With pita and vegetables." } ]},
+          { n:"Hummus Board", p:"$20", d:"With pita bread and vegetables." } ]},
         { sec:"Add-ons", items:[
           { n:"Baguette", p:"$4 half / $7 full" },
-          { n:"Mild Chorizo", p:"$11" },
+          { n:"Pork Chorizo", p:"$11" },
           { n:"Toscano Fennel Sausage", p:"$11" },
           { n:"Rosemary Lamb Salami", p:"$15" },
           { n:"Beef Salami", p:"$15" },
@@ -642,21 +668,26 @@ window.GUIDE = {
           { n:"Trio of Seasonal Sorbet", p:"$8" },
           { n:"Limoncello Chocolate Almonds", p:"$11" },
           { n:"Vine to Bar Chocolate", p:"$9" } ]},
-        { sec:"Non-alcoholic", items:[
-          { n:"Lemonade", p:"$5" },
+        { sec:"Coffee & other drinks", items:[
+          { n:"Espresso (single shot)", p:"$3" },
+          { n:"Cappuccino · Latte · Americano", p:"$4" },
           { n:"Hot Chocolate", p:"$6" },
-          { n:"Sodas, sweet tea, apple juice, water", p:"$3", d:"Root beer, Coke, Diet Coke, Sprite; sparkling water $3 small / $8 large." } ]}
+          { n:"Hot Tea", p:"$3" },
+          { n:"Lemonade", p:"$5" },
+          { n:"Sweet Tea · Apple Juice", p:"$3" },
+          { n:"Soda", p:"$3", d:"Coke, Diet Coke, Sprite, IBC Root Beer." },
+          { n:"Saratoga Springs Water", p:"$3 still · sparkling $3 / $8" } ]}
       ],
       wine:[
         { sec:"White", items:[
-          { n:"2024 Élevage Chardonnay", d:"apple, persimmon, soft oak · Autumn tasting", g:"$12", b:"$35" },
-          { n:"2022 Barrel Fermented Chardonnay", d:"melon, flint, cantaloupe · Dry White tasting", g:"$12", b:"$35" },
-          { n:"2024 Fiery Run Chardonnay", d:"2026 Governor's Cup Gold · pear, green apple, lemon · Dry White tasting", g:"$10", b:"$31" },
-          { n:"2024 Trail Blaze Chardonnay", d:"starfruit, honeysuckle, mango", g:"$10", b:"$31" },
+          { n:"2024 Élevage Chardonnay", d:"apple, persimmon, soft oak · Autumn & Chardonnay tastings", g:"$12", b:"$35" },
+          { n:"2022 Barrel Fermented Chardonnay", d:"100% Chardonnay · melon, flint, cantaloupe · Dry White & Chardonnay tastings", g:"$12", b:"$35" },
+          { n:"2024 Fiery Run Chardonnay", d:"2026 Governor's Cup Gold · 100% Chardonnay · pear, green apple, lemon · Dry White & Chardonnay tastings", g:"$10", b:"$31" },
+          { n:"2024 Trail Blaze Chardonnay", d:"starfruit, honeysuckle, mango · Chardonnay tasting", g:"$10", b:"$31" },
           { n:"2024 Pinot Grigio", d:"white cherry, papaya, white pepper · Autumn tasting", g:"$10", b:"$30" },
-          { n:"2024 Le Renard Gris", d:"grapefruit, kumquat, pear · Dry White tasting", g:"$11", b:"$32" },
+          { n:"2024 Le Renard Gris", d:"63% Pinot Grigio, 22% Chardonnay, 15% Riesling · grapefruit, kumquat, pear · Dry White tasting", g:"$11", b:"$32" },
           { n:"2025 Vidal Blanc", d:"peach, lemon zest, blossoms · Autumn tasting", g:"$11", b:"$31" },
-          { n:"2024 Petit Manseng", d:"pineapple, vanilla, quince · Dry White tasting", g:"$12", b:"$34" } ]},
+          { n:"2024 Petit Manseng", d:"100% Petit Manseng · pineapple, vanilla, quince · Dry White tasting", g:"$12", b:"$34" } ]},
         { sec:"Rosé & red", items:[
           { n:"2025 Rosé", d:"dry · strawberry, plum skin, blackberry purée", g:"$11", b:"$32" },
           { n:"Situationally Dependent", d:"blueberry, pomegranate, mocha · Dry Red tasting", g:"$13", b:"$39" },
@@ -665,13 +696,36 @@ window.GUIDE = {
           { n:"2023 Le Renard Rouge", d:"black cherry, damson plum, cedar · Dry Red tasting", g:"$17", b:"$53" },
           { n:"2022 Petit Verdot", d:"concentrated, boysenberry, earthy · Dry Red tasting", g:"$17", b:"$59" } ]},
         { sec:"Off-dry & sweet", items:[
-          { n:"Blue Mountain Mist", d:"off-dry · mango, lemon, peach · Sweet tasting", g:"$9", b:"$25" },
-          { n:"Freezeland White", d:"sweet · tangerine, mango · Sweet tasting", g:"$9", b:"$25" },
+          { n:"Blue Mountain Mist", d:"off-dry · guava, spiced honey, springtime blossom · Sweet tasting", g:"$9", b:"$25" },
+          { n:"Freezeland White", d:"semi-sweet · guava, pineapple, tangerine · Sweet tasting", g:"$9", b:"$25" },
           { n:"Pêche Blanc", d:"sweet · peach, orange blossom, almond · Sweet tasting", g:"$10", b:"$28" },
           { n:"Freezeland Red", d:"semi-sweet · raspberry, persimmon, blueberry · Sweet tasting", g:"$9", b:"$25" } ]},
         { sec:"Sparkling & cider (bottle only)", items:[
-          { n:"2023 Ascend Sparkling Chardonnay", d:"green apple, toasted brioche, honeydew", b:"$75" },
+          { n:"2023 Ascend Sparkling Chardonnay", d:"100% Chardonnay, méthode champenoise · green apple, toasted brioche, honeydew", b:"$75" },
           { n:"Core Sparkling Cider", d:"dry, crisp · apple, ginger", b:"$35" } ]}
+      ] } },
+
+  { id:"silver-dog", n:"Silver Dog Vineyards", town:"Linden", region:"shen", lat:38.9043649, lng:-78.0795624, tier:"Added Nov 2026", status:"Soft opening — tasting room still being finished",
+    hoursText:"Fri 2–6 PM · Sat 11 AM–6 PM (Google shows noon) · Sun 11 AM–6 PM · Mon–Thu closed · soft-opening hours, confirm before going",
+    h:"Fr 14:00-18:00|Sa 11:00-18:00|Su 11:00-18:00",
+    flights:["Sneak Peek Wine Tasting — five estate wines with small bites on the outdoor deck (book on Tock; reservation is free)","Wines also by the glass or bottle"],
+    food:"Small bites with the tasting; charcuterie and cheese available afterward.", foodLevel:"snacks", picnic:false,
+    wines:["2023 Chardonnay (Governor's Cup Silver) — Chablis-leaning: citrus, green apple, baking spice; new French oak and steel","2024 Petit Manseng — lean, tart citrus and pineapple","2024 Rosé — 70% Cabernet Sauvignon, 30% Barbera, Spanish-rosado style","2023 Rock Island Red — Barbera, Cabernet Sauvignon, Petit Verdot, Sagrantino; 18 months French oak (the star)","2023 Barbera"],
+    features:["Estate-only, small-batch, low-intervention wines (first vintage 2023)","Rare Italian grapes: Barbera and Sagrantino","Virginia's first off-grid tasting room: solar power, well and spring water, rainwater capture","Contemporary, landscape-hugging tasting room designed by architect-owner Eric Gronning","Deck views over Capstone and Crimson Lane to the mountains","Near 1,200 ft elevation; steep drive up the mountain","Owners Eric Gronning and Lori Robertson (formerly ran DC wine bar Maple); named for their dog, Silver"],
+    dogs:"Leashed dogs welcome.", dog:"yes", adults:true,
+    res:"Reservations recommended and free on Tock; 21+ only; parties of six or fewer; $10/person fee for cancellations inside 24 hours. Restroom is a high-end portable unit until the building is done.", resLevel:"recommended",
+    why:"Linden's newest winery, right between Capstone and Crimson Lane: an architect's off-grid tasting room, Italian grapes nobody else in the area grows, and early reviews that are uniformly glowing. Easy to add to a Capstone visit.",
+    url:"https://www.exploretock.com/silverdogvineyards", urlLabel:"Reservations (Tock)", menuUrl:"https://www.silverdogvineyards.com/",
+    menu:{ asOf:"2026-11-01", source:"Virginia Wine Time review (Aug 2026) and winery site",
+      note:"Winemaker Shai Van Gelder, per Virginia Wine Time; Eric Gronning grows the grapes. Planted: Chardonnay, Petit Manseng, Barbera, Sagrantino, Cabernet Franc, Cabernet Sauvignon, Merlot, Petit Verdot. Prices not yet published. Phone (540) 914-9344 · info@silverdogvineyards.com.",
+      wine:[
+        { sec:"White & rosé", items:[
+          { n:"2023 Chardonnay", d:"2026 Governor's Cup Silver · new French oak and stainless steel · citrus, green apple, baking spice; medium body, crisp finish" },
+          { n:"2024 Petit Manseng", d:"lean · tart citrus, pineapple, sharp acidity" },
+          { n:"2024 Rosé", d:"70% Cabernet Sauvignon, 30% Barbera · cherry, pomegranate, stone fruit; dry and weighty" } ]},
+        { sec:"Red", items:[
+          { n:"2023 Rock Island Red", d:"36% Barbera, 28% Cabernet Sauvignon, 22% Petit Verdot, 14% Sagrantino · 18 months new and neutral French oak · dark plum, blackberry, spice; still evolving" },
+          { n:"2023 Barbera", d:"cherry, blackberry, fleshy plum, hint of spice" } ]}
       ] } },
 
   { id:"magnolia", n:"Magnolia Vineyards & Winery", town:"Amissville", region:"shen", lat:38.6451442, lng:-78.0319914, tier:"Added Oct 2026",
@@ -899,7 +953,7 @@ window.GUIDE = {
     "afton-mountain":[4.3,298], "pippin-hill":[4.4,697], "veritas":[4.5,696], "king-family":[4.7,932], "pollak":[4.6,217],
     "southwest-mountains":[4.4,156], "sugarloaf":[4.4,461], "early-mountain":[4.5,536], "barboursville":[4.6,760], "greenhill":[4.1,443],
     "bluemont":[4.4,1310], "mountain-run":[4.9,274], "revalation":[4.7,82], "three-fox":[4.4,368], "lost-mountain":[4.6,109],
-    "crimson-lane":[4.5,325], "capstone":[4.8,139], "linden":[4.1,115], "quievremont":[4.7,158], "rappahannock-cellars":[4.7,473], "chester-gap":[4.8,219] } }
+    "crimson-lane":[4.5,325], "capstone":[4.8,139], "silver-dog":[5.0,14], "linden":[4.1,115], "quievremont":[4.7,158], "rappahannock-cellars":[4.7,473], "chester-gap":[4.8,219] } }
 };
 
 /* Street addresses (Virginia Wine listings, county/tourism sites, owner photos), Oct 2026 */
@@ -958,11 +1012,12 @@ window.GUIDE.addr = {
   'doukenie': '14727 Mountain Rd, Hillsboro, VA 20132',
   'narmada': '43 Narmada Ln, Amissville, VA 20106',
   'jefferson': '1353 Thomas Jefferson Pkwy, Charlottesville, VA 22902',
-  'gray-ghost': '14706 Lee Hwy, Amissville, VA 20106'
+  'gray-ghost': '14706 Lee Hwy, Amissville, VA 20106',
+  'silver-dog': '139 Feathers Ln, Linden, VA 22642'
 };
 
 /* Pins checked against Google-based listings (Wanderlog, Pearl), Winemaps and Roadtrippers, Oct 29 2026; the phone never moves these */
-window.GUIDE.pinsVerified = ["50-west", "accord", "afton-mountain", "ankida-ridge", "arterra", "barboursville", "blue-quartz", "bluemont", "boxwood", "breaux", "cana", "chester-gap", "chrysalis", "crimson-lane", "crosskeys", "delaplane-cellars", "doukenie", "ducard", "early-mountain", "gadino", "glen-manor", "granite-heights", "gray-ghost", "greenhill", "hazy-mountain", "jefferson", "keswick", "king-family", "la-grange", "linden", "magnolia", "michael-shaps", "mountain-run", "muse", "narmada", "pippin-hill", "pollak", "quievremont", "rappahannock-cellars", "revalation", "septenary", "slater-run", "stone-tower", "sugarloaf", "sunset-hills", "three-fox", "valley-road", "veritas", "walsh"];
+window.GUIDE.pinsVerified = ["50-west", "accord", "silver-dog", "afton-mountain", "ankida-ridge", "arterra", "barboursville", "blue-quartz", "bluemont", "boxwood", "breaux", "cana", "chester-gap", "chrysalis", "crimson-lane", "crosskeys", "delaplane-cellars", "doukenie", "ducard", "early-mountain", "gadino", "glen-manor", "granite-heights", "gray-ghost", "greenhill", "hazy-mountain", "jefferson", "keswick", "king-family", "la-grange", "linden", "magnolia", "michael-shaps", "mountain-run", "muse", "narmada", "pippin-hill", "pollak", "quievremont", "rappahannock-cellars", "revalation", "septenary", "slater-run", "stone-tower", "sugarloaf", "sunset-hills", "three-fox", "valley-road", "veritas", "walsh"];
 
 /* 2026 Virginia Governor's Cup gold medals at guide wineries (results announced March 2026).
    tag: "cup" = Governor's Cup winner, "case" = Governor's Cup Case (top 12), "bis" = Best in Show, "" = gold. */
