@@ -22,8 +22,8 @@ window.GUIDE = {
     scenery: { title: "Exceptional wine & scenery", ids: ["king-family","ducard","chester-gap","glen-manor","capstone","pollak","walsh","early-mountain","pippin-hill"] },
     food:    { title: "Food is part of the experience", ids: ["three-fox","pippin-hill","early-mountain","barboursville","chrysalis","cana","merrie-mill","stone-tower","blue-quartz"] },
     gems:    { title: "Hidden gems", ids: ["glen-manor","capstone","granite-heights","revalation","septenary","walsh","hark","ankida-ridge"] },
-    bravo:   { title: "Best with Bravo", ids: ["ducard","three-fox","keswick","chester-gap","king-family","glen-manor","blue-quartz","afton-mountain","breaux","walsh","rappahannock-cellars","jefferson"] },
-    added:   { title: "Newest additions", ids: ["silver-dog","hark","accord","keswick","muse","magnolia","ankida-ridge","12-ridges","crosskeys","jefferson","narmada","gadino","arterra","gray-ghost","doukenie"] },
+    bravo:   { title: "Best with Bravo", ids: ["ducard","barrel-oak","three-fox","keswick","chester-gap","king-family","glen-manor","blue-quartz","afton-mountain","breaux","walsh","rappahannock-cellars","jefferson"] },
+    added:   { title: "Newest additions", ids: ["barrel-oak","silver-dog","hark","accord","keswick","muse","magnolia","ankida-ridge","12-ridges","crosskeys","jefferson","narmada","gadino","arterra","gray-ghost","doukenie"] },
     glist:   { title: "On our Google Maps list", ids: ["rappahannock-cellars","chester-gap","linden","quievremont","crimson-lane","capstone","three-fox","lost-mountain","mountain-run","revalation","greenhill","bluemont","early-mountain","barboursville","southwest-mountains","sugarloaf","king-family","pollak","pippin-hill","veritas","afton-mountain"] },
     plan:    { title: "Needs extra planning", ids: ["crimson-lane","lost-mountain","linden","granite-heights"] }
   },
@@ -703,6 +703,32 @@ window.GUIDE = {
         { sec:"Sparkling & cider (bottle only)", items:[
           { n:"2023 Ascend Sparkling Chardonnay", d:"100% Chardonnay, méthode champenoise · green apple, toasted brioche, honeydew", b:"$75" },
           { n:"Core Sparkling Cider", d:"dry, crisp · apple, ginger", b:"$35" } ]}
+      ] } },
+
+  { id:"barrel-oak", n:"Barrel Oak Winery & Brewery", town:"Delaplane", region:"shen", lat:38.9132, lng:-77.9211, tier:"Added Nov 2026",
+    hoursText:"Mon–Thu noon–6 PM · Fri–Sun 11 AM–7 PM · closed Thanksgiving and Christmas Day (per Virginia Wine listing; confirm)",
+    h:"Mo-Th 12:00-18:00|Fr-Su 11:00-19:00", closed:["12-25"],
+    flights:["Guided Tasting — $27: five curated wines, about 45 min; seatings 11 AM, 1 PM, 3 PM daily; up to 6 guests","The Art of Pairing — $65: five wines with five seasonal bites, 45–60 min; Fri–Sun 1 PM and 3 PM","Beer sampler flights in the on-site brewery"],
+    experiences:["Cellar Tour with Premier Tasting — $40, prepaid, parties of 1–8, includes a complimentary glass (offered December–August, so it runs during our New Year's trip)","Winemaker's Cottage — overnight stay among the vines","Rotating weekend food trucks, shrimp boil, Turkey Trot, tree lighting and holiday events"],
+    food:"Shareable pizzas and flatbreads, charcuterie, cheeses and sweets, plus rotating food trucks on weekends. Outside food only at the outdoor picnic tables; no outside alcohol and no coolers (hampers and baskets OK, subject to inspection).", foodLevel:"trucks", picnic:true,
+    wines:["Estate wines from a 30-acre vineyard: Chardonnay, Cabernet and hybrid varieties","Currently featured: Sauvignon Blanc, Vidal Blanc, Pinot Gris, Krush sparkling, dry Rosé","2024 Petit Manseng — 100% estate, cold-fermented in steel, a touch of sweetness balancing bright acid","2022 Goldie — dessert wine, 75% Petit Manseng / 25% Vidal Blanc, 375 mL, fresh rather than syrupy","Bowhaus red blend","House craft beer (brewer Jin) with seasonal releases"],
+    features:["Winery and brewery in one, on a hillside in Delaplane","Fireplace seating, tasting bars, upstairs Loft, patio, lawns and picnic tables","Second-generation winemaker","Winemaker's Cottage for overnight stays","Best of Fauquier and Best of NOVA 2026","Minutes from Three Fox and Delaplane Cellars"],
+    dogs:"Well-behaved dogs welcome indoors and outdoors, except the upstairs Loft. Leashed and with an adult at all times; never tie leashes to furniture or leave dogs unattended. Dogs may use one of the front single-stall restrooms.", dog:"yes",
+    res:"Reserve on Tock (exploretock.com/barreloak) to guarantee a seat — tables fill fast. Groups of 9+ should reserve; buses and limos must contact the winery. Arrive 10 min early for tastings; seats held 15 min. Full refund with 48 hours' notice. Kids welcome with close supervision, but not in the Loft, fireplace seating or at the tasting bars (21+). 3623 Grove Lane, Delaplane VA 20144 · (540) 364-6402.", resLevel:"recommended",
+    why:"A Delaplane institution a few minutes from Three Fox: Bravo can come inside by the fire, there's beer as well as wine, and the cellar tour runs through the winter. Easy to pair with Three Fox or Delaplane Cellars on one afternoon.",
+    url:"https://barreloak.com/visit-us/", urlLabel:"Visit info, hours, and policies",
+    menu:{ asOf:"2026-11-02", source:"barreloak.com (Visit Us, home and wine pages); Virginia Wine listing",
+      note:"Food menu and glass/bottle prices aren't published online. Virginia Wine lists a $22 tasting and $45 tour — older figures than the winery's own $27 / $40.",
+      wine:[
+        { sec:"Tastings", items:[
+          { n:"Guided Tasting", p:"$27", d:"Five curated wines, ~45 min · 11 AM, 1 PM, 3 PM daily · up to 6" },
+          { n:"The Art of Pairing", p:"$65", d:"Five wines, five seasonal bites · Fri–Sun 1 PM and 3 PM" },
+          { n:"Cellar Tour with Premier Tasting", p:"$40", d:"Prepaid · 1–8 guests · complimentary glass · Dec–Aug" } ]},
+        { sec:"Featured wines", items:[
+          { n:"2024 Petit Manseng", d:"100% estate · stainless steel · slight sweetness, bright acidity" },
+          { n:"2022 Goldie (375 mL)", d:"75% Petit Manseng, 25% Vidal Blanc · dessert wine · part barrel, part steel" },
+          { n:"Sauvignon Blanc · Vidal Blanc · Pinot Gris" },
+          { n:"Krush (sparkling) · dry Rosé" } ]}
       ] } },
 
   { id:"silver-dog", n:"Silver Dog Vineyards", town:"Linden", region:"shen", lat:38.9043649, lng:-78.0795624, tier:"Added Nov 2026", status:"Open — tasting room still getting finishing touches",
