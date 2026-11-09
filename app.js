@@ -921,6 +921,22 @@ function visitSheet(wid, vid) {
     toast('Visit saved'); route(); checkBadges();
   });
 }
+/* pick a winery, then open the visit form — used by the Timeline's "Log a new visit" button */
+function visitPickSheet() {
+  const recent = [...S.visits].sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(v => v.wid);
+  const list = ALL().slice().sort((a, b) => a.n.localeCompare(b.n));
+  const row = w => `<button class="sugg" style="width:100%;text-align:left;background:none;border-left:0;border-right:0;border-top:0" data-wid="${w.id}" data-q="${esc((w.n + ' ' + (w.town || '')).toLowerCase())}"><span><b>${esc(w.n)}</b><br><span class="small muted">${esc(w.town || '')}${isVisited(w.id) ? ' · visited' : ''}</span></span><span class="small" style="color:var(--claret)">Log</span></button>`;
+  const rec = [...new Set(recent)].slice(0, 3).map(W).filter(Boolean);
+  const el = openSheet(`<h2>Log a new visit</h2><p class="muted small" style="margin:-8px 0 12px">Which winery?</p>
+    <div class="search" style="margin-bottom:10px">${svg('search')}<input type="search" id="vpQ" placeholder="Search by name or town" autocomplete="off"></div>
+    ${rec.length ? `<div id="vpRec"><div class="mi-sec">Recent</div>${rec.map(row).join('')}<div class="mi-sec">All wineries</div></div>` : ''}
+    <div id="vpList">${list.map(row).join('')}</div>
+    <div class="foot"><button type="button" class="btn" id="vpCancel">Cancel</button></div>`);
+  const q = $('#vpQ', el);
+  q.addEventListener('input', () => { const t = q.value.trim().toLowerCase(); if ($('#vpRec', el)) $('#vpRec', el).hidden = !!t; $$('#vpList [data-wid]', el).forEach(b => (b.hidden = t && !b.dataset.q.includes(t))); });
+  $('#vpCancel', el).onclick = closeSheet;
+  el.addEventListener('click', e => { const b = e.target.closest('[data-wid]'); if (!b) return; closeSheet(); visitSheet(b.dataset.wid); });
+}
 function wineSheet(id, n) {
   const x = (st(id).wines || {})[n] || {};
   const el = openSheet(`<h2>${esc(n)}</h2><form class="stack" id="wf">
@@ -1015,7 +1031,8 @@ function renderJournal() {
   if (jTab === 'timeline') {
     const vs = [...S.visits].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const byYear = {}; vs.forEach(v => { const y = (v.date || '????').slice(0, 4); (byYear[y] = byYear[y] || []).push(v); });
-    body = vs.length ? Object.keys(byYear).sort().reverse().map(y => `<div class="section"><h3>${y}</h3>${byYear[y].map(visitCard).join('')}</div>`).join('') : '<div class="empty" style="margin-top:16px">No visits yet. Open a winery and tap “Log a visit”.</div>';
+    body = `<div class="section"><button class="btn primary block" data-act="logVisitAny">${svg('plus')}Log a new visit</button></div>`;
+    body += vs.length ? Object.keys(byYear).sort().reverse().map(y => `<div class="section"><h3>${y}</h3>${byYear[y].map(visitCard).join('')}</div>`).join('') : '<div class="empty" style="margin-top:16px">No visits yet. Tap “Log a new visit” and pick the winery.</div>';
     const loose = S.photos.filter(p => !p.visitId).sort((a, b) => b.date - a.date);
     if (loose.length) body += `<div class="section"><h3>Other photos</h3><div class="photos">${loose.map(p => `<button data-act="viewPhoto" data-pid="${p.id}"><img src="${thumbURL(p)}" alt="" loading="lazy"></button>`).join('')}</div></div>`;
   } else if (jTab === 'passport') {
@@ -1689,6 +1706,7 @@ const ACT = {
   status: async el => { const id = el.dataset.id, s = el.dataset.s; const cur = st(id).status; if (s === 'visited' && cur === 'visited' && visitsOf(id).length) { toast('Has logged visits — delete them to unmark'); return; } await setSt(id, { status: cur === s ? '' : s }); toast(cur === s ? 'Removed' : s === 'visited' ? 'Marked visited — stamp collected' : 'Added to want-to-go'); renderWinery(id); checkBadges(); },
   fav: async el => { const id = el.dataset.id; await setSt(id, { fav: !st(id).fav }); renderWinery(id); },
   logVisit: el => visitSheet(el.dataset.id),
+  logVisitAny: () => visitPickSheet(),
   editVisit: el => visitSheet(null, el.dataset.vid),
   addPhoto: el => pickPhotos(el.dataset.id, null, false),
   camPhoto: el => pickPhotos(el.dataset.id, null, true),
