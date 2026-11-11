@@ -272,9 +272,17 @@ const EVST = { sold_out: 'Sold out', confirm_details: 'Confirm details', club_pr
 let _evIdx = null;
 function evIdx() { if (_evIdx) return _evIdx; _evIdx = {}; ((window.EVENTS && window.EVENTS.items) || []).forEach(e => { if (e.w) (_evIdx[e.w] = _evIdx[e.w] || []).push(e); }); Object.values(_evIdx).forEach(a => a.sort((x, y) => (x.d + (x.s || '')).localeCompare(y.d + (y.s || '')))); return _evIdx; }
 const evEnd = e => e.e || e.d;
+/* an event is past once its last day is over, or on its last day once its end time (or start + 3h if no end time) has passed */
+function evPast(e) {
+  const t = todayISO(), end = evEnd(e); if (end < t) return true; if (end > t) return false;
+  const n = new Date(), now = n.getHours() * 60 + n.getMinutes(); const mins = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + (m || 0); };
+  if (e.et) { const en = mins(e.et); return !(e.s && en < mins(e.s)) && now >= en; } // an end time before the start runs past midnight
+  if (e.s && end === e.d) return now >= mins(e.s) + 180;
+  return false;
+}
 const evsOn = (id, isoD) => (evIdx()[id] || []).filter(e => e.d <= isoD && evEnd(e) >= isoD);
-const evsTrip = (id, isoD) => evsOn(id, isoD).filter(e => e.k !== 'a' || EVWARN.includes(e.c) || e.c === 'hours_conflict'); // long seasonal notices stay on the winery page
-const evUpcoming = id => (evIdx()[id] || []).filter(e => evEnd(e) >= todayISO());
+const evsTrip = (id, isoD) => evsOn(id, isoD).filter(e => !evPast(e) && (e.k !== 'a' || EVWARN.includes(e.c) || e.c === 'hours_conflict')); // long seasonal notices stay on the winery page
+const evUpcoming = id => (evIdx()[id] || []).filter(e => !evPast(e));
 const evTime = e => e.s ? fmtClock(e.s) + (e.et ? '–' + fmtClock(e.et) : '') : '';
 const evShort = e => e.k === 'a' ? `⚠️ ${e.t}${e.x ? ': ' + e.x : ''}` : `${(EVCAT[e.c] || ['📅'])[0]} ${e.t}${evTime(e) ? ' · ' + evTime(e) : ''}${e.p ? ' · $' + e.p : ''}${EVST[e.st] ? ' · ' + EVST[e.st] : ''}`;
 function hoursOn(w, d) { const s = schedule(w, d); if (!s) return null; if ((w.closed || []).includes(`${d.getMonth() + 1}-${d.getDate()}`)) return []; if (evsOn(w.id, iso(d)).some(e => e.k === 'a' && e.c === 'closure')) return []; return s[d.getDay()]; }
@@ -464,7 +472,7 @@ function saveX() { if (!curHash) return; const xs = $$(X_SEL, view).map(e => e.s
 function restoreX(h) { const xs = xMem[skey(h)]; if (!xs) return; $$(X_SEL, view).forEach((e, i) => { if (xs[i]) e.scrollLeft = xs[i]; }); }
 function restoreUI() {
   if (UI.F) { Object.assign(F, UI.F); F.on = new Set(UI.F.on || []); }
-  if (UI.jTab) jTab = UI.jTab;
+  if (UI.jTab) jTab = UI.jTab === 'cellar' ? 'grapes' : UI.jTab;
   if (UI.MF) { MF.mode = UI.MF.mode || 'guide'; MF.on = new Set(UI.MF.on || []); MF.view = UI.MF.view || null; MF.peek = UI.MF.peek || null; }
   if (UI.last && UI.last !== 'home' && (!location.hash || location.hash === '#home') && Date.now() - (UI.t || 0) < 24 * 3600e3) history.replaceState(null, '', '#' + UI.last);
 }
@@ -507,8 +515,8 @@ let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if ((location.hash || '#home') === '#home') renderHome(); });
 /* home: next events, one per winery */
 function allUpcomingEvents() {
-  const today = todayISO(); const hidden = id => S.state[id] && S.state[id].hidden;
-  return ((window.EVENTS && window.EVENTS.items) || []).filter(e => e.k === 'e' && e.w && W(e.w) && !hidden(e.w) && evEnd(e) >= today)
+  const hidden = id => S.state[id] && S.state[id].hidden;
+  return ((window.EVENTS && window.EVENTS.items) || []).filter(e => e.k === 'e' && e.w && W(e.w) && !hidden(e.w) && !evPast(e))
     .sort((a, b) => (a.d + (a.s || '99')).localeCompare(b.d + (b.s || '99')));
 }
 const evDay = isoD => { const x = fromISO(isoD); const t = todayISO(); const tm = iso(new Date(Date.now() + 864e5)); return isoD === t ? 'Today' : isoD === tm ? 'Tomorrow' : `${DAYS3[x.getDay()]}, ${MONTHS[x.getMonth()]} ${x.getDate()}`; };
@@ -1026,7 +1034,7 @@ function peek(w) {
 let jTab = 'timeline';
 function renderJournal() {
   setTop('Journal');
-  const tabs = [['timeline', 'Timeline'], ['passport', 'Passport'], ['rank', 'Rankings'], ['cellar', 'Cellar']];
+  const tabs = [['timeline', 'Timeline'], ['passport', 'Passport'], ['rank', 'Rankings'], ['grapes', 'Grapes']];
   let body = '';
   if (jTab === 'timeline') {
     const vs = [...S.visits].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -1044,13 +1052,52 @@ function renderJournal() {
     body = `<div class="section"><h3>Our winery leaderboard</h3>${scored.length ? scored.map((x, i) => `<a class="rankrow" href="#w-${x.w.id}"><span class="n">${i + 1}</span><span><b>${esc(x.w.n)}</b><div class="bar"><i style="width:${x.sc}%"></i></div></span><span class="score" style="font-size:16px">${x.sc}</span></a>`).join('') : '<div class="empty">Score a winery on its page (scenery, wine, experience) to build the leaderboard.</div>'}</div>
       <div class="section"><h3>Best wines we've tasted</h3>${wines.length ? wines.slice(0, 25).map(x => `<a class="rankrow" href="#w-${x.id}"><span class="n" style="color:var(--gold);font-size:15px">${x.s}★</span><span><b>${esc(x.n)}</b>${x.v ? ' <span class="mono small muted">' + esc(x.v) + '</span>' : ''}<div class="small muted">${esc(W(x.id)?.n || '')}</div></span><span></span></a>`).join('') : '<div class="empty">Rate wines on a winery page and they rank here.</div>'}</div>`;
   } else {
-    const rows = []; Object.entries(S.state).forEach(([id, s]) => (s.bottles || []).forEach(b => rows.push({ id, ...b })));
-    rows.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const total = rows.reduce((n, b) => n + (+b.qty || 1), 0); const spend = rows.reduce((n, b) => n + (+b.price || 0) * (+b.qty || 1), 0);
-    body = `<div class="section"><div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat"><b class="mono">${total}</b><span>Bottles brought home</span></div><div class="stat"><b class="mono">$${spend.toFixed(0)}</b><span>Spent</span></div></div></div>
-      <div class="section">${rows.length ? `<div class="card" style="padding:2px 14px"><ul class="plain">${rows.map(b => `<li><b>${esc(b.wine)}</b>${b.vintage ? ' ' + esc(b.vintage) : ''} <span class="muted small">× ${esc(b.qty || 1)}</span><div class="small muted"><a href="#w-${b.id}">${esc(W(b.id)?.n || '')}</a>${b.date ? ' · ' + fmtDate(b.date) : ''}${b.price ? ' · $' + esc(b.price) : ''}</div></li>`).join('')}</ul></div>` : '<div class="empty">Add bottles from a winery page.</div>'}</div>`;
+    body = renderGrapes();
   }
   view.innerHTML = `<div class="seg sticky" style="margin-top:8px">${tabs.map(([k, l]) => `<button class="${jTab === k ? 'on' : ''}" data-act="jtab" data-k="${k}">${l}</button>`).join('')}</div>${body}`;
+}
+
+/* ---------------- grapes: Virginia varieties, guide acclaim, and our own notes ---------------- */
+const MEDAL = { cup: ['🏆', "Governor's Cup winner"], case: ['🥇', 'Cup Case, top 12'], bis: ['🥇', 'Best in Show'], '': ['🥇', 'Gold'] };
+const MEDAL_RANK = { cup: 0, case: 1, bis: 2, '': 3 };
+const grapeHit = (g, text) => { const t = (text || '').toLowerCase(); return g.kw.some(k => t.includes(k)); };
+function grapeAcclaim(g) {
+  const gc = G.govCup || { wineries: {} }; const live = new Set(ALL().map(w => w.id)); const out = [];
+  Object.entries(gc.wineries).forEach(([id, list]) => { if (!live.has(id)) return; const hits = list.filter(([n]) => grapeHit(g, n)); if (!hits.length) return;
+    const best = hits.map(h => h[1]).sort((a, b) => MEDAL_RANK[a] - MEDAL_RANK[b])[0]; out.push({ id, wines: hits.map(h => h[0]), tag: best, n: hits.length }); });
+  return out.sort((a, b) => MEDAL_RANK[a.tag] - MEDAL_RANK[b.tag] || b.n - a.n || W(a.id).n.localeCompare(W(b.id).n));
+}
+function grapeNotes(g) {
+  const out = []; const norm = n => n.toLowerCase().replace(/\(.*?\)/g, '').replace(/\b(19|20)\d\d\b/g, '').replace(/[^a-z]+/g, ' ').trim();
+  Object.entries(S.state).forEach(([id, st0]) => { if (!W(id)) return; const seen = new Set();
+    Object.entries(st0.wines || {}).forEach(([n, x]) => { if (!grapeHit(g, n) || !(x.s || x.note)) return; const k = norm(n); if (seen.has(k)) return; seen.add(k); out.push({ id, s: x.s || 0, t: n.replace(/\s*\(.*?\)/g, '') + (x.v ? ' ' + x.v : ''), note: x.note || '' }); });
+    (st0.notes || '').split('\n').map(l => l.trim()).filter(l => l && grapeHit(g, l)).forEach(l => out.push({ id, s: 0, t: l, note: '', jot: true })); });
+  S.visits.forEach(v => { if (!W(v.wid)) return; if (grapeHit(g, v.fav)) out.push({ id: v.wid, s: 0, t: v.fav, note: '', fav: v.date });
+    (v.notes || '').split(/(?<=[.!?])\s+/).filter(l => grapeHit(g, l)).forEach(l => out.push({ id: v.wid, s: 0, t: l, note: '', fav: v.date, visitNote: true })); });
+  return out.sort((a, b) => b.s - a.s);
+}
+const KIND = { white: ['gold', 'White'], red: ['claret', 'Red'], blend: ['claret', 'Red blend'], hybrid: ['ridge', 'Hybrid / native'] };
+function grapeCard(g) {
+  const acc = grapeAcclaim(g); const extra = (g.x || []).filter(([id]) => W(id) && !hidden0(id)); const mine = grapeNotes(g);
+  const chip = (id, label, icon) => `<a class="chip grape-w" href="#w-${id}">${icon ? icon + ' ' : ''}<b>${esc(shortName(W(id).n))}</b><span>${esc(label)}</span></a>`;
+  const noteRow = x => `<a class="grape-note" href="#w-${x.id}"><span class="gn-l">${x.s ? '<span style="color:var(--gold)">' + '★'.repeat(x.s) + '</span>' : x.fav ? (x.visitNote ? '📝' : '❤️') : '✏️'}</span><span><b>${esc(x.t)}</b><span class="small muted"> · ${esc(shortName(W(x.id).n))}${x.fav ? (x.visitNote ? ' · visit note ' : ' · favorite pour ') + fmtDate(x.fav) : x.jot ? ' · your note' : ''}</span>${x.note ? `<div class="small muted">${esc(x.note)}</div>` : ''}</span></a>`;
+  const [kc, kl] = KIND[g.kind];
+  return `<details class="card menu grape" data-mk="grape:${g.id}" ${openMem['grape:' + g.id] ? 'open' : ''}><summary><span class="grape-h"><span>${esc(g.n)}${mine.length ? ` <span class="chip gold" style="padding:1px 7px;font-size:11px">${mine.length} of ours</span>` : ''}</span><span class="small muted" style="font-weight:500">${esc(g.tag)}</span></span></summary>
+    <div class="stack" style="gap:10px;padding-bottom:12px">
+      <div class="chips"><span class="chip ${kc}">${kl}</span>${acc.length ? `<span class="chip">${acc.length} medal-winning ${acc.length === 1 ? 'winery' : 'wineries'} in our guide</span>` : ''}</div>
+      <p style="margin:0">${esc(g.about)}</p>
+      <p class="small" style="margin:0"><b>Tastes like:</b> ${esc(g.taste)}</p>${g.src ? `<p class="small muted" style="margin:0">Sources: ${esc(g.src)}</p>` : ''}
+      ${acc.length || extra.length ? `<div><div class="mi-sec" style="border-top:0;padding-top:0">Most acclaimed in our guide${acc.length ? ` · ${G.govCup.year} Governor's Cup and press` : ''}</div><div class="chips" style="gap:8px">${acc.map(a => chip(a.id, a.wines.join(', ') + ' · ' + MEDAL[a.tag][1], MEDAL[a.tag][0])).join('')}${extra.map(([id, l, by]) => chip(id, l, by ? '📰' : '🍇')).join('')}</div></div>` : ''}
+      ${mine.length ? `<div><div class="mi-sec" style="border-top:0;padding-top:0">Our notes</div>${mine.map(noteRow).join('')}</div>` : ''}
+    </div></details>`;
+}
+const hidden0 = id => !!(S.state[id] && S.state[id].hidden);
+function renderGrapes() {
+  const gs = G.grapes || []; const sec = (title, sub, list) => list.length ? `<div class="section"><h3>${title}</h3><p class="small muted" style="margin:-4px 0 10px">${sub}</p>${list.map(grapeCard).join('')}</div>` : '';
+  return sec('Reds that excel', 'The red grapes and blends critics agree do best in Virginia\'s terroir.', gs.filter(g => g.kind === 'red' || g.kind === 'blend'))
+    + sec('Whites', 'The white grapes with a proven track record in Virginia.', gs.filter(g => g.kind === 'white'))
+    + sec('Hybrids to watch', 'Disease-resistant French-American grapes, the direction the NYT reports some Virginia growers are taking.', gs.filter(g => g.kind === 'hybrid'))
+    + '<p class="small muted" style="margin:4px 2px 24px">🥇 2026 Governor\'s Cup medals · 📰 praised by the NYT, Decanter or Jancis Robinson. Tap a winery to open its page. Ratings, favorite pours and notes you add on winery pages appear here automatically.</p>';
 }
 
 /* ---------------- passport stamps & region badges ---------------- */

@@ -115,7 +115,8 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:34px;line-
   const EVCAT = { live_music: '🎵', wine_dinner: '🍽️', holiday_lights: '✨', special_tasting: '🍷', holiday_market: '🎄', food_pairing: '🧀', workshop: '🎨', special_experience: '🌟', social: '🎲', food_and_music: '🎶', comedy: '🎤', outdoors: '🥾', wine_tasting: '🍷', food_truck: '🚚', wine_festival: '🎪', film: '🎬' };
   const EVST = { sold_out: 'Sold out', confirm_details: 'Confirm details', club_priority_verify: 'Members first' };
   const EVS = (window.EVENTS && window.EVENTS.items) || [];
-  const evsOn = (id, d) => id ? EVS.filter(e => e.w === id && e.d <= d && (e.e || e.d) >= d).sort((a, b) => (a.s || '').localeCompare(b.s || '')) : [];
+  const evPast = e => { const n = new Date(), t = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`, end = e.e || e.d; if (end !== t) return end < t; const now = n.getHours() * 60 + n.getMinutes(), mins = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + (m || 0); }; if (e.et) return !(e.s && mins(e.et) < mins(e.s)) && now >= mins(e.et); if (e.s && end === e.d) return now >= mins(e.s) + 180; return false; };
+  const evsOn = (id, d) => id ? EVS.filter(e => e.w === id && e.d <= d && (e.e || e.d) >= d && !evPast(e)).sort((a, b) => (a.s || '').localeCompare(b.s || '')) : [];
   const evTime = e => e.s ? fmtClock(e.s) + (e.et ? '–' + fmtClock(e.et) : '') : '';
   function decode(h) {
     const s = h.replace(/-/g, '+').replace(/_/g, '/'); const pad = s + '==='.slice((s.length + 3) % 4);
