@@ -351,7 +351,10 @@ details.more summary::-webkit-details-marker{display:none}
 @keyframes fade{from{opacity:0}}
 .viewer{position:fixed;inset:0;z-index:950;background:#000;display:flex;flex-direction:column}
 .viewer .vstage{flex:1;min-height:0;position:relative;display:flex}
-.viewer .vstage img{flex:1;min-height:0;min-width:0;object-fit:contain;width:100%;touch-action:pan-y pinch-zoom}
+.viewer{touch-action:none;overscroll-behavior:contain}
+.viewer .vstage{overflow:hidden}
+.viewer .vstage img{flex:1;min-height:0;min-width:0;object-fit:contain;width:100%;touch-action:none;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.viewer .cap input{width:100%;box-sizing:border-box;font-size:16px}
 .viewer .vcount{color:#ccc;font-variant-numeric:tabular-nums}
 .vnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;padding:0 0 4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .vnav.prev{left:10px}.vnav.next{right:10px}

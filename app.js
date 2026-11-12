@@ -380,6 +380,12 @@ async function onPicked(e) {
   toast(`${n} photo${n === 1 ? '' : 's'} saved`); const a = pickCtx.after; pickCtx = null; if (a) a(); else route();
 }
 /* full-screen photo viewer: arrows (and swipe / keyboard) step through the set the photo was opened from */
+/* Android Chrome keeps a pinch-zoom on the page; capping the viewport at scale 1 snaps it back. Lifted again on close. */
+function lockZoom(on) {
+  const m = document.querySelector('meta[name=viewport]'); if (!m) return;
+  if (!m.dataset.base) m.dataset.base = m.content;
+  m.content = on ? m.dataset.base + ', maximum-scale=1, user-scalable=no' : m.dataset.base;
+}
 async function openViewer(pid, ids) {
   let list = (ids && ids.length ? ids : [pid]).filter(id => S.photos.some(x => x.id === id));
   let i = Math.max(0, list.indexOf(pid)); if (!list.length) return;
@@ -387,11 +393,13 @@ async function openViewer(pid, ids) {
   v.innerHTML = `<div class="vbar"><button data-v="close">Close</button><span class="vcount small"></span><span class="row"><button data-v="cover">Set as cover</button><button data-v="del">Delete</button></span></div>
     <div class="vstage"><img alt=""><button class="vnav prev" data-v="prev" aria-label="Previous photo">‹</button><button class="vnav next" data-v="next" aria-label="Next photo">›</button></div>
     <div class="cap"><input type="text" id="capIn" placeholder="Add a caption" style="background:rgba(255,255,255,.1);color:#fff;border-color:transparent"><div class="small vmeta" style="margin-top:6px;opacity:.7"></div></div>`;
+  lockZoom(true);
   document.body.appendChild(v);
   const img = $('img', v), cap = $('#capIn', v); let url = null, seq = 0;
   const cur = () => S.photos.find(x => x.id === list[i]);
   async function show() {
     const p = cur(); if (!p) return; const w = W(p.wid); const my = ++seq;
+    resetZoom();
     img.src = thumbURL(p); img.alt = p.caption || (w ? w.n : 'Photo');
     cap.value = p.caption || '';
     $('.vmeta', v).innerHTML = `${w ? esc(w.n) + ' · ' : ''}${new Date(p.date).toLocaleDateString()}${Sync.enabled && p._cb ? ' · added by ' + esc(p._cb) : ''}`;
@@ -401,12 +409,39 @@ async function openViewer(pid, ids) {
     if (url) URL.revokeObjectURL(url); url = full; if (full) img.src = full;
   }
   const go = d => { const n = i + d; if (n < 0 || n >= list.length) return; i = n; show(); };
-  const close = () => { document.removeEventListener('keydown', onKey); v.remove(); if (url) URL.revokeObjectURL(url); route(); };
+  const close = () => { document.removeEventListener('keydown', onKey); v.remove(); lockZoom(false); if (url) URL.revokeObjectURL(url); route(); };
   const onKey = e => { if (e.target === cap) return; if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'Escape') close(); };
   document.addEventListener('keydown', onKey);
-  let tx = null, ty = 0;
-  img.addEventListener('touchstart', e => { if (e.touches.length === 1) { tx = e.touches[0].clientX; ty = e.touches[0].clientY; } else tx = null; }, { passive: true });
-  img.addEventListener('touchend', e => { if (tx === null) return; const t = e.changedTouches[0]; const dx = t.clientX - tx, dy = t.clientY - ty; tx = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1); }, { passive: true });
+  /* gestures are handled here, not by the browser: pinch or double-tap to zoom the photo, drag to pan, swipe to change photo.
+     The browser's own page zoom is reset and locked while the viewer is open (it used to stick and blow the viewer up). */
+  const stage = $('.vstage', v); let sc = 1, ox = 0, oy = 0, lastTap = 0, lastTouch = 0, g = null;
+  const fit = () => { const W = stage.clientWidth, H = stage.clientHeight, nw = img.naturalWidth || W, nh = img.naturalHeight || H, f = Math.min(W / nw, H / nh); return { W, H, w: nw * f, h: nh * f }; };
+  const clamp = () => { const f = fit(); const mx = Math.max(0, (f.w * sc - f.W) / 2), my = Math.max(0, (f.h * sc - f.H) / 2); ox = Math.min(mx, Math.max(-mx, ox)); oy = Math.min(my, Math.max(-my, oy)); };
+  const apply = (anim) => { img.style.transition = anim ? 'transform .2s ease' : 'none'; img.style.transform = sc === 1 && !ox && !oy ? '' : `translate(${ox}px,${oy}px) scale(${sc})`; };
+  const resetZoom = () => { sc = 1; ox = 0; oy = 0; apply(false); };
+  const zoomAt = (cx, cy, s2) => { const r = stage.getBoundingClientRect(); const px = cx - r.left - r.width / 2, py = cy - r.top - r.height / 2; ox = px - (px - ox) * (s2 / sc); oy = py - (py - oy) * (s2 / sc); sc = s2; if (sc <= 1.01) { sc = 1; ox = 0; oy = 0; } clamp(); };
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  stage.addEventListener('touchstart', e => {
+    const t = e.touches;
+    if (t.length === 2) g = { pinch: true, d: dist(t), s: sc, cx: (t[0].clientX + t[1].clientX) / 2, cy: (t[0].clientY + t[1].clientY) / 2 };
+    else if (t.length === 1) g = { x: t[0].clientX, y: t[0].clientY, x0: t[0].clientX, y0: t[0].clientY, ox, oy, moved: false };
+  }, { passive: true });
+  stage.addEventListener('touchmove', e => {
+    const t = e.touches; if (!g) return;
+    if (g.pinch && t.length === 2) { const s2 = Math.min(5, Math.max(1, g.s * dist(t) / g.d)); zoomAt(g.cx, g.cy, s2); apply(false); return; }
+    if (!g.pinch && t.length === 1) { const dx = t[0].clientX - g.x0, dy = t[0].clientY - g.y0; if (Math.abs(dx) + Math.abs(dy) > 8) g.moved = true;
+      if (sc > 1) { ox = g.ox + dx; oy = g.oy + dy; clamp(); apply(false); } }
+  }, { passive: true });
+  stage.addEventListener('touchend', e => {
+    lastTouch = Date.now(); if (!g) return; const t = e.changedTouches[0];
+    if (g.pinch) { if (!e.touches.length) g = null; return; }
+    const dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+    if (!g.moved && !e.target.closest('.vnav')) { const now = Date.now();
+      if (now - lastTap < 300) { zoomAt(t.clientX, t.clientY, sc > 1 ? 1 : 2.5); apply(true); lastTap = 0; } else lastTap = now; }
+    else if (sc === 1 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1);
+    g = null;
+  }, { passive: true });
+  stage.addEventListener('dblclick', e => { if (Date.now() - lastTouch < 800) return; zoomAt(e.clientX, e.clientY, sc > 1 ? 1 : 2.5); apply(true); });
   v.addEventListener('click', async e => {
     const b = e.target.closest('[data-v]'); if (!b) return; const p = cur();
     if (b.dataset.v === 'close') close();
