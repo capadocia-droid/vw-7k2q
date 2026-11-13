@@ -841,6 +841,7 @@ async function renderWinery(id) {
     ${w.why ? `<div class="take"><div class="who">Guide view</div><p>${esc(w.why)}</p></div>` : ''}
     ${w.mine ? `<div class="take" style="border-color:var(--gold)"><div class="who">Our assessment</div><p>${esc(w.mine)}</p></div>` : ''}
   </div>` : ''}
+  ${accoladesBlock(id)}
   <div class="section"><div class="section-head"><h3>On the map</h3><a href="https://www.google.com/maps/search/?api=1&query=${enc(placeQ(w))}" target="_blank" rel="noopener">Open in Google Maps</a></div>
     <div id="gmap">${navigator.onLine ? `<iframe class="mapframe" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${gEmbed(w)}" title="Google map of ${esc(w.n)}"></iframe>` : `<div class="mapholder">The Google map appears when you're online.<br>${Math.round(d)} miles from ${esc(base().name)}.</div>`}</div>
   </div>
@@ -1097,6 +1098,16 @@ function renderJournal() {
   view.innerHTML = `<div class="seg sticky" style="margin-top:8px">${tabs.map(([k, l]) => `<button class="${jTab === k ? 'on' : ''}" data-act="jtab" data-k="${k}">${l}</button>`).join('')}</div>${body}`;
 }
 
+/* ---------------- awards & press (GUIDE.accolades) ---------------- */
+function accoladesBlock(id) {
+  const list = ((G.accolades || {})[id] || []).slice().sort((a, b) => (b.y || 0) - (a.y || 0));
+  if (!list.length) return '';
+  const row = a => { const inner = `<span class="acc-y">${a.y || '—'}</span><span><b>${esc(a.src)}</b><span class="acc-t">${esc(a.t)}</span></span>`;
+    return a.u ? `<a class="acc" href="${esc(a.u)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="acc">${inner}</div>`; };
+  const shown = list.slice(0, 4), more = list.slice(4);
+  return `<div class="section" style="margin-top:18px"><div class="section-head"><h3>Awards &amp; press</h3></div><div class="card" style="padding:4px 14px">${shown.map(row).join('')}${more.length ? `<details class="acc-more"><summary>${more.length} more</summary>${more.map(row).join('')}</details>` : ''}</div></div>`;
+}
+
 /* ---------------- grapes: Virginia varieties, guide acclaim, and our own notes ---------------- */
 const MEDAL = { cup: ['🏆', "Governor's Cup winner"], case: ['🥇', 'Cup Case, top 12'], bis: ['🥇', 'Best in Show'], '': ['🥇', 'Gold'] };
 const MEDAL_RANK = { cup: 0, case: 1, bis: 2, '': 3 };
@@ -1137,7 +1148,7 @@ function renderGrapes() {
   return sec('Reds that excel', 'The red grapes and blends critics agree do best in Virginia\'s terroir.', gs.filter(g => g.kind === 'red' || g.kind === 'blend'))
     + sec('Whites', 'The white grapes with a proven track record in Virginia.', gs.filter(g => g.kind === 'white'))
     + sec('Hybrids to watch', 'Disease-resistant French-American grapes, the direction the NYT reports some Virginia growers are taking.', gs.filter(g => g.kind === 'hybrid'))
-    + '<p class="small muted" style="margin:4px 2px 24px">🥇 2026 Governor\'s Cup medals · 📰 praised by the NYT, Decanter or Jancis Robinson. Tap a winery to open its page. Ratings, favorite pours and notes you add on winery pages appear here automatically.</p>';
+    + '<p class="small muted" style="margin:4px 2px 24px">🥇 2026 Governor\'s Cup medals · 📰 awarded or praised by the press (Decanter, VinePair, James Suckling, the NYT, Jancis Robinson). Tap a winery to open its page. Ratings, favorite pours and notes you add on winery pages appear here automatically.</p>';
 }
 
 /* ---------------- passport stamps & region badges ---------------- */

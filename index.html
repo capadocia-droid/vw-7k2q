@@ -153,6 +153,13 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:
 .wcard .name{font:17px/1.2 var(--f-display);margin:0}
 .wcard .meta{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wcard .side{padding:12px 12px 12px 0;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:6px}
+.acc{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:14px;line-height:1.4}
+.acc:last-child,.acc-more .acc:last-child{border-bottom:0}
+.acc .acc-y{flex:none;min-width:38px;font-weight:700;color:var(--claret);font-variant-numeric:tabular-nums}
+.acc .acc-t{display:block;color:var(--muted);margin-top:2px}
+a.acc b::after{content:" ↗";font-weight:400;color:var(--muted)}
+.acc-more summary{padding:10px 0;color:var(--claret);font-weight:600;cursor:pointer;list-style:none}
+.acc-more summary::-webkit-details-marker{display:none}
 .wcard .lastv{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--vine)}
 .wcard .lastv svg{width:14px;height:14px;flex:none}
 .viewer ~ .sheet-bg{z-index:970}

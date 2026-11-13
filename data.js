@@ -447,13 +447,30 @@ window.GUIDE = {
     hoursText:"Thu–Mon 11 AM–5:30 PM · Fridays until 8 PM",
     h:"Th,Sa,Su,Mo 11:00-17:30|Fr 11:00-20:00",
     flights:["Rotating flights at the table","Guided bar tastings","Premium Elevation Tastings"],
-    food:"Virginia Table culinary program, seasonal restaurant menu, wine-paired meals, and Chef's Table. The Meadow offers casual dining when open.", foodLevel:"kitchen", picnic:null,
+    food:"Full restaurant (Virginia Table): order à la carte (small plates, shareables, sweets) or the three-course prix fixe, Thursday–Monday ($65, wine pairings +$30). Reserve on Tock. The Meadow offers casual dining when open.", foodLevel:"kitchen", picnic:null,
     wines:["Quaker Run Cabernet Franc","Eluvium","Novum","Premium estate blends"],
-    features:["Landscaped estate","Mountain views","Elegant tasting room","Scenic Route 231","One of Virginia's strongest winery food programs"],
+    features:["Landscaped estate","Mountain views","Elegant tasting room","Scenic Route 231","One of Virginia's strongest winery food programs","Owned by Steve and Jean Case; winemaker Maya Hood White","Decanter golds in 2025 (Petit Manseng) and 2026 (Quaker Run Cabernet Franc)"],
     dogs:"Welcome on designated patios and meadow areas.", dog:"yes",
     res:"Strongly recommended for dining and premium tastings. Meadow walk-ins possible, weather permitting.", resLevel:"recommended",
     why:"Very likely to suit us: quality wine and scenery with a more elaborate culinary program.",
-    url:"https://www.earlymountain.com/visit-us", urlLabel:"Tasting and restaurant information" },
+    url:"https://www.earlymountain.com/visit-us", urlLabel:"Tasting and restaurant information",
+    menu:{ asOf:"2026-11-13", source:"earlymountain.com/our-menus",
+      note:"Fall menu, subject to change. Tasting and flight prices aren't listed on the menu page.",
+      food:[
+        { sec:"À la carte", items:[
+          { n:"Whipped Ricotta (V)", p:"$10" },
+          { n:"Little Gem Lettuce (V, GF)", p:"$16" },
+          { n:"Rampicante Squash Soup", p:"$16" },
+          { n:"Miso Glazed Pork Belly (GF)", p:"$16" },
+          { n:"Petit Duck Confit Taco", p:"$16" },
+          { n:"Scallop Crudo (GF)", p:"$18" },
+          { n:"“Fish and Chips”", p:"$18", d:"With Kaluga caviar." },
+          { n:"Fusilli Pasta (V, dairy-free option)", p:"$22" },
+          { n:"Pan Seared Halibut", p:"$30" },
+          { n:"Grilled Bison Ribeye (GF)", p:"$34" } ]},
+        { sec:"Prix fixe · Thu–Mon", items:[
+          { n:"Three courses", p:"$65", d:"Chilled yellowtail tuna; New Frontier bison ribeye or fusilli; chocolate pot de crème. Wine pairings +$30." } ]}
+      ] } },
 
   { id:"pollak", n:"Pollak Vineyards", town:"Greenwood", region:"cville", lat:38.034531, lng:-78.794458, tier:"Monticello",
     hoursText:"Wed–Mon 11 AM–5 PM",
@@ -1193,7 +1210,7 @@ window.GUIDE.grapes = [
     about:"It ripens earlier than Cabernet Sauvignon, so it is usually picked before the late-season storms, and it suits the clay-rich Monticello area around Charlottesville, where Cabernet Sauvignon struggles. It is now the red of choice for established wineries like King Family. As Tim Rausse put it to the New York Times: \"The story of cab franc is the story of Virginia becoming itself.\"",
     taste:"Red cherry, raspberry, green herbs, graphite, a peppery finish; Decanter notes the \"warm, earthy cassis\" of central Virginia examples.",
     src:"New York Times (Eric Asimov, 2025), Decanter",
-    x:[["king-family","Cabernet Franc, singled out by the NYT","nyt"]] },
+    x:[["early-mountain","2022 Quaker Run Cabernet Franc: Decanter gold, 95 pts (2026)","dec"],["veritas","2024 Cabernet Franc: Decanter gold, 95 pts (2026)","dec"],["king-family","Cabernet Franc, singled out by the NYT","nyt"]] },
   { id:"petit-verdot", n:"Petit Verdot", kind:"red", kw:["petit verdot"],
     tag:"A Bordeaux blending grape that shines alone here",
     about:"In Bordeaux it is a few percent of the blend because it often fails to ripen. Virginia's long, warm season ripens it fully, and Decanter names it, with Tannat, as a grape that \"shine[s] here.\" King Family's winemaker Matthieu Finot even makes a light, Beaujolais-style version under his own label.",
@@ -1215,26 +1232,26 @@ window.GUIDE.grapes = [
     about:"Early Virginia growers looked to Bordeaux because its climate was closer to theirs than California's. Blending Cabernet Franc, Merlot and Petit Verdot (and a little Cabernet Sauvignon) lets them balance each vintage. The NYT praises Linden's fresh, savory blends and Glen Manor's reds, which range from fresh to age-worthy. Medal chips appear only when the guide confirms the wine is a Bordeaux-style blend.",
     taste:"Layered dark fruit, structure, built to age.",
     src:"New York Times, Decanter",
-    x:[["linden","Fresh, savory Bordeaux blends (NYT)","nyt"],["lost-mountain","Polished, deep reds (NYT)","nyt"],["glen-manor","Fresh to age-worthy reds (NYT)","nyt"]] },
+    x:[["barboursville","2017 Octagon: Decanter Top 50 US Wines of 2025, the first Virginia wine on the list","dec"],["linden","Fresh, savory Bordeaux blends (NYT)","nyt"],["lost-mountain","Polished, deep reds (NYT)","nyt"],["glen-manor","Fresh to age-worthy reds (NYT)","nyt"]] },
 
   { id:"petit-manseng", n:"Petit Manseng", kind:"white", kw:["petit manseng"],
     tag:"Virginia's standout white",
     about:"From southwest France. Tiny berries, loose clusters and tough skins hold up to Virginia's humidity, and as hurricane remnants now often track through the state at harvest, the NYT reports many growers turning to it for its ability to bounce back after storms. It keeps lively acidity even when very ripe, so it is made dry, off-dry and sweet.",
     taste:"Pineapple, mango, apricot, honey and ginger; rich but zesty. Sweet versions burst with \"mango-juice flavours\" (Jancis Robinson).",
-    src:"New York Times, Decanter, JancisRobinson.com",
-    x:[["michael-shaps","\"A serious Petit Manseng\" (Decanter)","dec"],["glen-manor","Refreshing sweet Petit Manseng (NYT)","nyt"]] },
+    src:"New York Times, Decanter, VinePair, JancisRobinson.com",
+    x:[["early-mountain","2022 Petit Manseng: Decanter gold, 95 pts (2025); VinePair Top 50 of 2024","dec"],["michael-shaps","\"A serious Petit Manseng\" (Decanter)","dec"],["glen-manor","Refreshing sweet Petit Manseng (NYT)","nyt"]] },
   { id:"viognier", n:"Viognier", kind:"white", kw:["viognier"],
     tag:"Virginia's official state grape (since 2011)",
     about:"Originally from Condrieu in France's northern Rhône. Critics rate it highly at its best (a Washington sommelier told Decanter it's the one Virginia wine she can pick out blind), but it is site-sensitive: its low acidity can make it feel heavy, so quality varies more than with Petit Manseng.",
     taste:"Honeysuckle, peach, apricot, orange blossom; full body, softer acidity.",
     src:"Decanter, JancisRobinson.com",
-    x:[["barboursville","Viognier Reserve, called excellent by Jancis Robinson","jr"]] },
+    x:[["king-family","2024 Viognier: Decanter gold, 95 pts (2026)","dec"],["barboursville","Viognier Reserve, called excellent by Jancis Robinson","jr"]] },
   { id:"chardonnay", n:"Chardonnay", kind:"white", kw:["chardonnay"],
     tag:"Virginia's most planted white, best on the right sites",
     about:"Grown here longer and more widely than any other white, but Decanter notes that great Chardonnay needs particular conditions. The best come from cool, well-chosen sites: the NYT praises Linden's energetic, textured Chardonnays, and King Family's creamy blanc de blancs sparkling wine.",
     taste:"Green apple, lemon and pear; with oak, butter, toast and vanilla.",
-    src:"New York Times, Decanter, JancisRobinson.com",
-    x:[["linden","Energetic, textured Chardonnays (NYT)","nyt"],["king-family","Blanc de blancs sparkling (NYT)","nyt"]] },
+    src:"New York Times, Decanter, JancisRobinson.com, James Suckling",
+    x:[["early-mountain","2022 Quaker Run Chardonnay: top-scoring white in James Suckling's 2025 Virginia report","js"],["linden","Energetic, textured Chardonnays (NYT)","nyt"],["king-family","Blanc de blancs sparkling (NYT)","nyt"]] },
   { id:"sauvignon-blanc", n:"Sauvignon Blanc", kind:"white", kw:["sauvignon blanc"],
     tag:"Finding its footing on cooler sites",
     about:"Decanter reports it has found its footing in many parts of Virginia and plantings keep growing. It needs to hold its acidity, so higher, cooler sites such as those around Linden suit it best.",
@@ -1258,3 +1275,60 @@ window.GUIDE.grapes = [
     taste:"Lemon, green apple, grapefruit, a mineral edge; crisp and light.",
     x:[["three-fox","Sparkling Seyval Blanc",""]] }
 ];
+
+/* Awards & press from wine magazines and critics, shown on each winery page (newest first).
+   y = year, src = publication, t = what it said or awarded, u = source link. Checked Nov 2026. */
+window.GUIDE.accolades = {
+  "early-mountain": [
+    { y:2026, src:"Decanter World Wine Awards", t:"Gold, 95 pts: 2022 Quaker Run Cabernet Franc (one of five Virginia golds that year)", u:"https://earlymountain.com/blog/95-points-at-the-decanter-world-wine-awards-the-story-of-our-2022-quaker-run-cabernet-franc" },
+    { y:2026, src:"Decanter", t:"Recommended in “A wine weekend in Northern Virginia” for its dining, the Rise and Eluvium blends, and a Petit Manseng aged in a “perpetual lees” barrel", u:"https://www.decanter.com/wine/virginia/a-wine-weekend-in-northern-virginia-washington-dc/" },
+    { y:2025, src:"Decanter World Wine Awards", t:"Gold, 95 pts: 2022 Petit Manseng, only the second DWWA gold ever won by a Virginia winery. Also silver for Eluvium (94), Quaker Run Cabernet Franc (94) and Rise (93), bronze for Novum (87)", u:"https://wineindustryadvisor.com/2025/06/24/early-mountain-vineyards-takes-home-gold/" },
+    { y:2025, src:"Drinkhacker", t:"Late-2025 releases: 2022 Novum A- (“big-hearted but disciplined”), 2022 Petit Manseng A-, 2021 Rise B+, 2021 Quaker Run Cabernet Franc B", u:"https://www.drinkhacker.com/2025/11/12/review-wines-of-early-mountain-late-2025-releases/" },
+    { y:2025, src:"James Suckling", t:"Virginia report: the 2022 Quaker Run Chardonnay was the top-scoring white, with several other wines in the 90s; praised the food and tasting room", u:"https://www.jamessuckling.com/wine-tasting-reports/stepping-up-to-the-world-wine-stage-virginia-finds-its-footing" },
+    { y:2024, src:"Wine Spectator", t:"Restaurant Award of Excellence for its wine and culinary program", u:"https://wineindustryadvisor.com/2024/06/27/early-mountain-vineyards-earns-wine-spectators-2024-award-of-excellence" },
+    { y:2024, src:"Wine Enthusiast", t:"Wine Star Awards: winemaker Maya Hood White nominated for Winemaker of the Year, the only Virginia nominee in any category", u:"https://northernvirginiamag.com/food-and-drink/2024/09/17/early-mountains-maya-hood-white-nominated-as-winemaker-of-the-year/" },
+    { y:2024, src:"VinePair", t:"Top 50 Wines of 2024, #24, 93 pts: 2022 Petit Manseng, “a compelling example” of Virginia's flagship white", u:"https://vinepair.com/articles/best-wines-2024/" },
+    { y:0, src:"VinePair", t:"Next Wave Awards: Maya Hood White nominated for Winemaker of the Year (as reported; year not confirmed)", u:"" },
+    { y:2023, src:"Owen Bargreen", t:"“An outstanding producer out of Virginia”: Eluvium 92 (“absolutely delicious”), Petit Manseng 92", u:"https://owenbargreen.com/blog/2023/10/20/early-mountain" }
+  ],
+  "barboursville": [
+    { y:2026, src:"Decanter", t:"Top 50 US Wines of 2025 (#50): 2017 Octagon, the first Virginia wine ever on the list", u:"https://northernvirginiamag.com/food-and-drink/2026/01/06/this-virginia-wine-made-the-u-s-top-50-list/" },
+    { y:2026, src:"Decanter", t:"Recommended in “A wine weekend in Northern Virginia” as the state's oldest active winery: Octagon, Sangiovese and Vermentino", u:"https://www.decanter.com/wine/virginia/a-wine-weekend-in-northern-virginia-washington-dc/" },
+    { y:0, src:"Jancis Robinson", t:"Called its Viognier Reserve excellent", u:"https://www.jancisrobinson.com/articles/virginia-v-variety" }
+  ],
+  "king-family": [
+    { y:2026, src:"Decanter World Wine Awards", t:"Gold, 95 pts: 2024 Viognier. Also silver for 2021 Mountain Plains (93), bronze for 2023 Cabernet Franc (89)", u:"https://wineindustryadvisor.com/2026/06/19/monticello-ava-earns-26-medals-at-2026-decanter-world-wine-awards/" },
+    { y:2025, src:"New York Times", t:"Eric Asimov singled out its Cabernet Franc and its “graceful, creamy” blanc de blancs sparkling wine", u:"" }
+  ],
+  "pollak": [
+    { y:2026, src:"Decanter World Wine Awards", t:"Gold, 95 pts: 2022 Smuggler. Also silver for 2023 Reserve Merlot (92), 2023 Nebbiolo (91), 2023 Meritage (90) and 2022 Reserve Cabernet Franc (90), bronze for 2023 Reserve Chardonnay (88)", u:"https://wineindustryadvisor.com/2026/06/19/monticello-ava-earns-26-medals-at-2026-decanter-world-wine-awards/" }
+  ],
+  "veritas": [
+    { y:2026, src:"Decanter World Wine Awards", t:"Gold, 95 pts: 2024 Cabernet Franc. Also silver for NV Scintilla (90), bronze for 2023 Monticello White (88)", u:"https://wineindustryadvisor.com/2026/06/19/monticello-ava-earns-26-medals-at-2026-decanter-world-wine-awards/" }
+  ],
+  "southwest-mountains": [
+    { y:2026, src:"Decanter World Wine Awards", t:"Silver for 2023 Cabernet Franc (91) and 2023 Reserve Chardonnay (90); bronze for 2023 Merlot and 2023 Petit Manseng (88)", u:"https://wineindustryadvisor.com/2026/06/19/monticello-ava-earns-26-medals-at-2026-decanter-world-wine-awards/" }
+  ],
+  "chrysalis": [
+    { y:2025, src:"Decanter World Wine Awards", t:"Bronze, 88 pts: Locksley Reserve Norton", u:"https://www.boomermagazine.com/winning-virginia-wines-at-the-2025-dwwa/" }
+  ],
+  "linden": [
+    { y:2026, src:"Decanter", t:"Recommended in “A wine weekend in Northern Virginia”: founder Jim Law is “the architect of modern Virginia wine”; Hardscrabble Chardonnay, Petit Manseng, Bordeaux blends", u:"https://www.decanter.com/wine/virginia/a-wine-weekend-in-northern-virginia-washington-dc/" },
+    { y:2025, src:"New York Times", t:"Eric Asimov: “superb wines, including energetic, textured chardonnays and fresh, savory Bordeaux blends”", u:"" }
+  ],
+  "glen-manor": [
+    { y:2025, src:"New York Times", t:"Eric Asimov: reds range from fresh and savory to complex and age-worthy; “lovely, refreshing” sweet Petit Manseng", u:"" }
+  ],
+  "michael-shaps": [
+    { y:0, src:"Decanter", t:"Regional profile: “a serious Petit Manseng”", u:"https://www.decanter.com/premium/virginia-state-regional-profile-plus-the-10-best-wines-worth-seeking-out-449671" }
+  ],
+  "stone-tower": [
+    { y:2026, src:"Decanter", t:"Recommended in “A wine weekend in Northern Virginia” for Blue Ridge views and hospitality: estate sparkling, Chardonnay, Nebbiolo", u:"https://www.decanter.com/wine/virginia/a-wine-weekend-in-northern-virginia-washington-dc/" }
+  ],
+  "walsh": [
+    { y:2026, src:"Decanter", t:"Recommended in “A wine weekend in Northern Virginia” for side-by-side site tastings: Bethany Ridge and Twin Notch Sauvignon Blancs, Dutchman's Creek and Twin Notch Cabernet Francs", u:"https://www.decanter.com/wine/virginia/a-wine-weekend-in-northern-virginia-washington-dc/" }
+  ],
+  "crimson-lane": [
+    { y:2026, src:"Decanter", t:"Recommended in “A wine weekend in Northern Virginia” as a high-end, reservation-only visit: Collina and Parral red blends", u:"https://www.decanter.com/wine/virginia/a-wine-weekend-in-northern-virginia-washington-dc/" }
+  ]
+};
