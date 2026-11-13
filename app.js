@@ -120,6 +120,59 @@ async function loadAll() {
 }
 const saveKV = k => DB.put('kv', S.kv[k], k);
 
+/* ---- wine identity: one wine per winery + name + vintage, however it was spelled ----
+   "Fiery Run Chardonnay (2024 — Governor's Cup Gold)", "2024 Fiery Run Chardonnay" and "Fiery Run Chardonnay" are the same wine;
+   different vintages of the same wine count separately; an entry without a vintage merges into one that has it. */
+const WINE_STOP = new Set(['estate', 'reserve', 'sur', 'lie', 'nv', 'the', 'vineyard', 'vineyards', 'cellars', 'winery', 'va', 'virginia', 'monticello', 'ava', 'of', 'and', 'wine']);
+function wineKey(name) {
+  let t = String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const vin = (t.match(/\b(19|20)\d\d\b/) || [''])[0];
+  t = t.replace(/\(.*?\)/g, ' ').split(/\s[—–-]\s/)[0].replace(/\b(19|20)\d\d\b/g, ' ').replace(/chardonnel/g, 'chardonel').replace(/sauv\.?\s*blanc/g, 'sauvignon blanc').replace(/[^a-z ]+/g, ' ');
+  const toks = [...new Set(t.split(/\s+/).filter(x => x && !WINE_STOP.has(x)))].sort();
+  return { k: toks.join(' '), vin };
+}
+function tastedWines() {
+  const out = [];
+  for (const [id, s] of Object.entries(S.state)) {
+    if (!s || s.hidden || !W(id)) continue;
+    const groups = {};
+    for (const [n, x] of Object.entries(s.wines || {})) { if (!(x && (x.t || x.s))) continue; const wk = wineKey(n); const k = wk.k, vin = wk.vin || ((String(x.v || '').match(/\b(19|20)\d\d\b/) || [''])[0]); if (!k) continue; (groups[k] = groups[k] || { vins: new Set(), names: [], s: 0 }); if (vin) groups[k].vins.add(vin); groups[k].names.push(n); groups[k].s = Math.max(groups[k].s, x.s || 0); }
+    for (const [k, g] of Object.entries(groups)) (g.vins.size ? [...g.vins] : ['']).forEach(v => out.push({ id, k, v, s: g.s, name: g.names.find(n => !v || n.includes(v)) || g.names[0] }));
+  }
+  return out;
+}
+/* one-time import of wines read from flight photos (GUIDE.tastedSeed); waits for family sync so it never overwrites newer edits */
+async function applyTastedSeed() {
+  const seedT = G.tastedSeed; if (!seedT || (S.kv.settings || {}).tastedSeed === seedT.v) return;
+  if (Sync.enabled && Sync.status !== 'off') { for (let i = 0; i < 60 && Sync.status !== 'synced'; i++) await new Promise(r => setTimeout(r, 1000)); if (Sync.status !== 'synced') return; }
+  let added = 0;
+  for (const [id, names] of Object.entries(seedT.wines)) {
+    if (!W(id)) continue; const s = st(id); const wines = Object.assign({}, s.wines); const extra = [...(s.extraWines || [])];
+    const gc = ((G.govCup || {}).wineries || {})[id] || [];
+    const pool = [...new Set(Object.keys(wines).concat(extra, W(id).wines || [], gc.map(g => g[0])))];
+    let changed = false;
+    for (const n of names) {
+      const nk = wineKey(n);
+      // same wine already listed (your entry, the guide's list or its Governor's Cup golds): just tick it
+      const vinOf = m => wineKey(m).vin || ((String((wines[m] || {}).v || '').match(/\b(19|20)\d\d\b/) || [''])[0]);
+      const hit = pool.find(m => { const mv = vinOf(m); return wineKey(m).k === nk.k && (!mv || !nk.vin || mv === nk.vin); });
+      if (hit) { const cur = wines[hit] || {}; const patch = { t: true }; if (nk.vin && !vinOf(hit)) patch.v = nk.vin; // a generic entry takes this vintage, so a second vintage gets its own row
+        if (!cur.t || patch.v) { wines[hit] = Object.assign({}, cur, patch); changed = true; } continue; }
+      wines[n] = { t: true }; extra.push(n); pool.push(n); changed = true; added++;
+    }
+    if (changed) await setSt(id, { wines, extraWines: extra });
+  }
+  // duplicate visits (same winery and day): drop only copies with no notes, favorite, people or photos
+  const empty = v => !(v.fav || v.notes || v.who) && !S.photos.some(ph => ph.visitId === v.id);
+  const seen = {};
+  for (const v of [...S.visits].sort((a, b) => empty(a) - empty(b))) {
+    const k = v.wid + '|' + v.date; if (!v.date) continue;
+    if (seen[k] && empty(v)) { await DB.del('visits', v.id); S.visits = S.visits.filter(x => x.id !== v.id); } else seen[k] = true;
+  }
+  S.kv.settings.tastedSeed = seedT.v; await saveKV('settings');
+  if (location.hash.replace('#', '') in { '': 1, home: 1 }) route();
+}
+
 async function seed() {
   for (const w of G.wineries) {
     if (w.visited) {
@@ -576,8 +629,7 @@ function allEventsSheet() {
 function renderHome() {
   setTop('VA Wine Passport', { logo: true, actions: `${Sync.enabled ? `<span id="syncBadge">${syncBadge()}</span>` : ''}<button class="iconbtn" data-act="go" data-to="prefs" aria-label="Settings">${svg('gear')}</button>` });
   const all = ALL(); const visited = all.filter(w => isVisited(w.id)).length;
-  const winesRated = Object.values(S.state).reduce((n, s) => n + Object.values(s.wines || {}).filter(x => x.s).length, 0);
-  const bottles = Object.values(S.state).reduce((n, s) => n + (s.bottles || []).reduce((m, b) => m + (+b.qty || 1), 0), 0);
+  const winesTasted = tastedWines().length; const favs = all.filter(w => st(w.id).fav).length;
   const today = todayISO();
   const trip = S.trips.filter(t => t.end >= today).sort((a, b) => a.start.localeCompare(b.start))[0];
   let tripHTML = '';
@@ -597,8 +649,8 @@ function renderHome() {
     <div class="stats section">
       <div class="stat"><b class="mono">${visited}<span class="muted" style="font-size:14px">/${all.length}</span></b><span>Visited</span></div>
       <div class="stat"><b class="mono">${S.visits.length}</b><span>Visits</span></div>
-      <div class="stat"><b class="mono">${winesRated}</b><span>Wines</span></div>
-      <div class="stat"><b class="mono">${bottles}</b><span>Bottles</span></div>
+      <div class="stat"><b class="mono">${winesTasted}</b><span>Wines</span></div>
+      <a class="stat" href="#wineries" data-act="filter" data-f="fav" style="color:inherit;text-decoration:none"><b class="mono">${favs}</b><span>Favorites</span></a>
     </div>
     <div class="section"><div class="section-head"><h3>Open now near ${esc(b.name.split(',')[0])}</h3><a href="#wineries" data-act="filter" data-f="open">See all</a></div>
       ${openNear.length ? `<div class="wlist">${openNear.map(wCard).join('')}</div>` : `<div class="empty">Nothing on the list is open right now. ${nextOpening(all)}</div>`}</div>
@@ -609,8 +661,7 @@ function renderHome() {
       <a class="coll" href="#wineries" data-act="filter" data-f="want"><b>Our want-to-go list</b><span>${all.filter(w => st(w.id).status === 'want').length} saved</span></a>
     </div></div>
     <div class="section"><div class="section-head"><h3>Latest from the journal</h3><a href="#journal">Journal</a></div>
-      ${recent.length ? recent.map(visitCard).join('') : '<div class="empty">Log a visit from any winery page.</div>'}</div>
-    <p class="small muted" style="margin-top:28px">Guide data: ${esc(G.edition)}. Hours are published schedules, not guarantees — confirm before you drive.</p>`;
+      ${recent.length ? recent.map(visitCard).join('') : '<div class="empty">Log a visit from any winery page.</div>'}</div>`;
   paintRidges();
 }
 /* ---------------- smart "next five" ---------------- */
@@ -697,7 +748,7 @@ function paintRidges(root = document) { $$('canvas[data-ridge]', root).forEach(c
 const F = { q: '', on: new Set(), region: '', coll: '', sort: 'az' };
 const sortName = w => w.n.replace(/^The\s+/i, '');
 const FILTERS = [
-  ['open', 'Open now', 'clock'], ['want', 'Want to go', 'heart'], ['visited', 'Visited', 'check'], ['unvisited', 'Not yet visited', 'mountain'],
+  ['open', 'Open now', 'clock'], ['want', 'Want to go', 'heart'], ['visited', 'Visited', 'check'], ['fav', 'Favorites', 'star'], ['unvisited', 'Not yet visited', 'mountain'],
   ['dog', 'Bravo welcome', 'dog'], ['kitchen', 'Food on site', 'fork'], ['picnic', 'Picnic OK', 'basket'], ['walkin', 'Walk-ins OK', 'walk'], ['gold', "Gov's Cup golds", 'medal']
 ];
 function passes(w) {
@@ -709,6 +760,7 @@ function passes(w) {
     if (f === 'open' && openStatus(w).code !== 'open') return false;
     if (f === 'want' && s.status !== 'want') return false;
     if (f === 'visited' && !isVisited(w.id)) return false;
+    if (f === 'fav' && !s.fav) return false;
     if (f === 'unvisited' && isVisited(w.id)) return false;
     if (f === 'dog' && w.dog !== 'yes') return false;
     if (f === 'kitchen' && !['kitchen', 'trucks'].includes(w.foodLevel)) return false;
@@ -867,8 +919,6 @@ async function renderWinery(id) {
     </div></div>
   <div class="section"><div class="section-head"><h3>Our visits</h3><button class="linkbtn" data-act="logVisit" data-id="${id}">Log a visit</button></div>
     ${visits.length ? visits.map(visitCard).join('') : '<div class="empty">No visits logged yet. After you go, log the date, who came, your favorite pour, and photos.</div>'}</div>
-  <div class="section"><div class="section-head"><h3>Bottles we bought</h3><button class="linkbtn" data-act="addBottle" data-id="${id}">Add bottle</button></div>
-    ${(s.bottles || []).length ? `<div class="card" style="padding:2px 14px"><ul class="plain">${s.bottles.map((b, i) => `<li class="row" style="justify-content:space-between;flex-wrap:nowrap"><span>${svg('bottle', 'width="16" height="16" style="vertical-align:-3px;color:var(--claret)"')} <b>${esc(b.wine)}</b>${b.vintage ? ' ' + esc(b.vintage) : ''} <span class="muted small">× ${esc(b.qty || 1)}${b.price ? ' · $' + esc(b.price) : ''}${b.date ? ' · ' + fmtDate(b.date) : ''}</span></span><button class="iconbtn" style="width:32px;height:32px" data-act="delBottle" data-id="${id}" data-i="${i}" aria-label="Remove">${svg('x')}</button></li>`).join('')}</ul></div>` : '<div class="empty">Track what came home with you, and when to open it.</div>'}</div>
   <div class="section"><h3>Public reviews</h3>
     <div class="card">${gR(id) ? `<div class="row" style="padding-bottom:6px"><b class="mono" style="font-size:22px">${gR(id)[0]}</b><span style="color:var(--gold)">★</span><span class="small muted">Google · ${gR(id)[1].toLocaleString()} reviews · as of ${fmtDate(G.gRatings.asOf)}</span></div>` : ''}<div class="links">
       <a href="https://www.google.com/maps/search/?api=1&query=${enc(placeQ(w))}" target="_blank" rel="noopener">Google reviews <span>${svg('ext')}</span></a>
@@ -1075,7 +1125,7 @@ function peek(w) {
 let jTab = 'timeline';
 function renderJournal() {
   setTop('Journal');
-  const tabs = [['timeline', 'Timeline'], ['passport', 'Passport'], ['rank', 'Rankings'], ['grapes', 'Grapes']];
+  const tabs = [['timeline', 'Timeline'], ['passport', 'Passport'], ['rank', 'Rankings'], ['grapes', 'VA Grapes']];
   let body = '';
   if (jTab === 'timeline') {
     const vs = [...S.visits].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -1772,7 +1822,7 @@ function familySection() {
       ${s === 'unverified' ? `<span class="small">We sent a verification link to ${esc(u.email)}. Open it, then tap <b>I’ve verified</b>.</span><div class="row"><button class="btn primary" data-act="fbRefresh">I’ve verified</button><button class="btn" data-act="fbResend">Resend link</button></div>` : ''}
       ${s === 'denied' ? `<span class="small">This account isn’t on the family list yet. Ask Claudio to add <b>${esc(u.email)}</b> to the journal’s sharing rules, then tap Try again.</span><div><button class="btn" data-act="fbRefresh">Try again</button></div>` : ''}
       ${s === 'error' ? `<span class="small" style="color:var(--claret)">${esc(Sync.msg)}</span><div><button class="btn" data-act="fbRefresh">Try again</button></div>` : ''}
-      ${s === 'synced' || s === 'connecting' || s === 'offline' ? `<span class="small muted">Visits, photos, notes, scores, wine ratings, bottles, and trips are shared with everyone on the family list. Home base, theme, and map pins stay per phone.</span>` : ''}
+      ${s === 'synced' || s === 'connecting' || s === 'offline' ? `<span class="small muted">Visits, photos, notes, scores, wine ratings, and trips are shared with everyone on the family list. Home base, theme, and map pins stay per phone.</span>` : ''}
       <div class="row"><label class="fld" style="flex:1">Name on your entries<input type="text" id="fbName" value="${esc(u.displayName || '')}" placeholder="e.g. Claudio"></label><button class="btn" data-act="fbSaveName" style="align-self:flex-end">Save</button></div>
       <div><button class="btn" data-act="fbSignOut">Sign out</button></div>`;
   }
@@ -1891,6 +1941,7 @@ window.addEventListener('resize', debounce(() => paintRidges(), 200));
   route();
   checkBadges();
   Sync.init();
+  applyTastedSeed().catch(() => {});
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   setTimeout(() => refinePins(false), 4000);
 })();
