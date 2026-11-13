@@ -728,12 +728,18 @@ function wIcons(w) {
   const foodC = ['kitchen', 'trucks'].includes(w.foodLevel) ? 'ok' : w.foodLevel === 'bring' ? 'no' : '';
   return `<span class="icons"><span class="${dogC}" title="Dogs: ${esc(w.dog || 'unknown')}">${svg('dog')}</span><span class="${foodC}" title="Food">${svg('fork')}</span>${w.picnic ? `<span class="ok" title="Picnic OK">${svg('basket')}</span>` : ''}${w.resLevel === 'required' ? `<span title="Reservation required" style="color:var(--claret)">${svg('cal')}</span>` : ''}${w.adults ? '<span class="mono small" title="Adults only">21+</span>' : ''}</span>`;
 }
+/* "Last visited" line on winery cards: newest dated visit, or a plain "Visited" if it was marked without a logged date */
+function lastVisitLine(id) {
+  const v = visitsOf(id).find(x => x.date); const n = visitsOf(id).length;
+  if (v) return `<span class="lastv">${svg('check')}Last visited ${fmtDate(v.date)}${n > 1 ? ` · ${n} visits` : ''}</span>`;
+  return isVisited(id) ? `<span class="lastv">${svg('check')}Visited</span>` : '';
+}
 function wCard(w) {
   const s = st(w.id); const sc = score(w.id); const ph = photosOf(w.id)[0];
   const d = distFromBase(w);
   return `<a class="wcard" href="#w-${w.id}" style="--rc:${regionColor(w.region)}"><span class="band"></span>
     <span class="body"><h4 class="name">${esc(w.n)}</h4><span class="meta">${esc(w.town)} · ${esc(legFmt(driveFromBase(w), true))}${gR(w.id) ? ` · <span style="color:var(--gold)">★</span> ${gR(w.id)[0]}` : ''}</span>
-      <span class="row">${statusChip(w)}</span>${wIcons(w)}</span>
+      ${lastVisitLine(w.id)}<span class="row">${statusChip(w)}</span>${wIcons(w)}</span>
     <span class="side">${ph ? `<img class="thumb" src="${thumbURL(ph)}" alt="">` : isVisited(w.id) ? `<span class="stamp-mini" title="Visited">${svg('check')}</span>` : s.status === 'want' ? `<span style="color:var(--claret)">${svg('heartf', 'width="20" height="20"')}</span>` : '<span></span>'}
       ${sc != null ? `<span class="score">${sc}</span>` : s.fav ? `<span style="color:var(--gold)">${svg('star', 'width="16" height="16"')}</span>` : ''}</span></a>`;
 }
