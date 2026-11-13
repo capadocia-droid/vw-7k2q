@@ -864,7 +864,7 @@ async function renderWinery(id) {
   view.innerHTML = `
   <div class="hero" style="--rc:${rc}">
     ${coverURL ? `<img src="${coverURL}" alt="">` : `<canvas data-ridge="${esc(id)}" data-color="${rc}"></canvas>`}<div class="shade"></div>
-    <div class="inner"><div class="tier">${esc(regionName(w.region))}${w.tier ? ' · ' + esc(w.tier) : ''}</div><h2>${esc(w.n)}</h2><div class="town">${esc(w.town)}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', Virginia'}${w.aka ? ' · ' + esc(w.aka) : ''}</div></div>
+    <div class="inner"><div class="tier">${esc(regionName(w.region))}${w.tier && !/^Added\b/.test(w.tier) && w.tier !== regionName(w.region) ? ' · ' + esc(w.tier) : ''}</div><h2>${esc(w.n)}</h2><div class="town">${esc(w.town)}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', Virginia'}${w.aka ? ' · ' + esc(w.aka) : ''}</div></div>
   </div>
   ${s.hidden ? `<div class="card row" style="margin-top:14px;justify-content:space-between;border-color:var(--claret)"><span class="small"><b>Removed from our guide.</b><br><span class="muted">Visits and photos are kept.</span></span><button class="btn primary" data-act="restoreW" data-id="${id}">Restore</button></div>` : ''}
   <div class="actions">
