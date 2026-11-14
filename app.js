@@ -753,7 +753,7 @@ const FILTERS = [
 ];
 function passes(w) {
   const s = st(w.id);
-  if (F.q) { const hay = [w.n, w.town, regionName(w.region), (w.wines || []).join(' '), (w.features || []).join(' '), s.notes || '', w.menu ? JSON.stringify(w.menu) : ''].join(' ').toLowerCase(); if (!F.q.toLowerCase().split(/\s+/).every(t => hay.includes(t))) return false; }
+  if (F.q) { const hay = [w.n, w.town, regionName(w.region), (w.wines || []).join(' '), (w.features || []).join(' '), (w.passPerks || []).map(p => p.t).join(' '), s.notes || '', w.menu ? JSON.stringify(w.menu) : ''].join(' ').toLowerCase(); if (!F.q.toLowerCase().split(/\s+/).every(t => hay.includes(t))) return false; }
   if (F.region && w.region !== F.region) return false;
   if (F.coll && !inPick(F.coll, w.id)) return false;
   for (const f of F.on) {
@@ -903,6 +903,7 @@ async function renderWinery(id) {
     ${photos.length ? `<div class="photos${arrangeFor === id ? ' arranging' : ''}" id="ph-grid" data-id="${id}">${photos.map((p, i) => `<div class="ph" data-pid="${p.id}">${arrangeFor === id ? `<img src="${thumbURL(p)}" alt="" draggable="false">` : `<button data-act="viewPhoto" data-pid="${p.id}"><img src="${thumbURL(p)}" alt="${esc(p.caption)}" loading="lazy"></button>`}${i === 0 ? '<span class="cover">Cover</span>' : ''}${arrangeFor === id ? `<button class="phdel" data-act="delPhoto" data-pid="${p.id}" aria-label="Delete photo">${svg('x')}</button>` : ''}</div>`).join('')}</div>
       ${arrangeFor === id ? '<span class="small muted">Drag photos to reorder. The first one is the cover. Tap × to delete.</span>' : ''}` : '<div class="empty">Your photos from this winery will collect here.</div>'}</div>
   ${(w.flights || []).length || (w.experiences || []).length ? `<div class="section"><h3>Tastings & flights</h3><div class="card" style="padding:2px 14px"><ul class="plain">${(w.flights || []).map(f => `<li>${esc(f)}</li>`).join('')}${(w.experiences || []).map(f => `<li><span class="chip gold" style="margin-right:6px">Experience</span>${esc(f)}</li>`).join('')}</ul></div></div>` : ''}
+  ${passPerksSection(w, s)}
   ${w.food ? `<div class="section"><div class="section-head"><h3>Food</h3>${w.menuUrl ? `<a href="${esc(w.menuUrl)}" target="_blank" rel="noopener">Current menu</a>` : ''}</div><p class="prose" style="margin:0">${esc(w.food)}</p></div>` : ''}
   ${menuSection(w)}
   ${govCupSection(w)}
@@ -955,6 +956,21 @@ function menuSection(w) {
       ${m.note ? `<span class="small muted">${esc(m.note)}</span>` : ''}` : ''}
     ${mp.length ? `<div class="strip">${mp.map(p => `<img src="${thumbURL(p)}" alt="Menu photo" data-act="viewPhoto" data-pid="${p.id}">`).join('')}</div>` : m ? '' : '<div class="empty">No menu yet. Photograph the menu on your visit, then send the photos to Claude to have it typed into the guide.</div>'}
   </div>`;
+}
+/* Pass perks: the Virginia Wine tasting-pass perks are public and live in data.js. The pass link or code is personal,
+   so it is saved only in this winery's state (never in the hosted files). If nothing is saved yet, a pass link already
+   pasted into Our notes is shown here. */
+const PASS_URL = /https?:\/\/[^\s<>"']+/g;
+const passLinks = c => (String(c || '').match(PASS_URL) || []).map(u => `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${svg('ext')}Open my pass</a>`).join('');
+function passPerksSection(w, s) {
+  const today = todayISO();
+  const perks = (w.passPerks || []).filter(p => { const u = ((G.passes || {})[p.p] || {}).until; return !u || u >= today; });
+  if (!perks.length) return '';
+  const code = s.passCodes !== undefined ? s.passCodes : (String(s.notes || '').match(PASS_URL) || []).filter(u => /virginiawine\.org/i.test(u)).join('\n');
+  return `<div class="section"><h3>Pass perks</h3>
+    <div class="card" style="padding:2px 14px"><ul class="plain">${perks.map(p => { const ps = (G.passes || {})[p.p] || {}; return `<li><span class="chip gold" style="margin-right:6px">${esc(ps.n || 'Pass')}</span>${esc(p.t)}${ps.until ? ` <span class="small muted">· through ${fmtDate(ps.until)}</span>` : ''}</li>`; }).join('')}</ul></div>
+    <label class="fld" style="margin-top:10px">My pass link or code<textarea id="passCodes" data-pass="${esc(w.id)}" placeholder="Paste your pass link or code here (saved only on your devices)">${esc(code)}</textarea></label>
+    <div class="row" id="passLinks" style="margin-top:8px">${passLinks(code)}</div></div>`;
 }
 const GC_TAG = { cup: ['🏆', 'Governor\'s Cup'], case: ['📦', 'Governor\'s Cup Case'], bis: ['⭐', 'Best in Show'], '': ['🏅', 'Gold'] };
 const gcOf = id => ((window.GUIDE.govCup || {}).wineries || {})[id] || [];
@@ -1912,10 +1928,12 @@ document.addEventListener('click', e => { const el = e.target.closest('[data-act
 /* autosave inputs */
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 const saveNotes = debounce(async (id, v) => { await setSt(id, { notes: v }); }, 500);
+const savePass = debounce(async (id, v) => { await setSt(id, { passCodes: v }); }, 500);
 const saveRv = debounce(async (id, k, v) => { await setSt(id, { review: Object.assign({}, st(id).review, { [k]: v, asOf: todayISO() }) }); }, 600);
 document.addEventListener('input', e => {
   const t = e.target;
   if (t.dataset.notes) saveNotes(t.dataset.notes, t.value);
+  if (t.dataset.pass) { savePass(t.dataset.pass, t.value); const pl = $('#passLinks'); if (pl) pl.innerHTML = passLinks(t.value); }
   if (t.dataset.rv) saveRv(t.dataset.id, t.dataset.rv, t.value);
   if (t.dataset.sc) { $('#o-' + t.dataset.sc).textContent = t.value; t.style.opacity = 1; }
 });
