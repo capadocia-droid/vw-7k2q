@@ -84,14 +84,62 @@ window.GUIDE = {
     status:"Personally visited — loved, especially for its spectacular views.",
     hoursText:"Thu–Sun 11 AM–6 PM (Thursday seasonal) · Last call 5:30 PM",
     h:"Th-Su 11:00-18:00",
-    flights:["Tastings available — current flights and prices need confirmation"],
-    food:"Flatbreads, including an olive flatbread, plus meats, cheeses, crackers, and locally made stuffed breads. Outside picnics permitted.", foodLevel:"snacks", picnic:true,
+    flights:["Standard flight, five wines — $18 (2022 Viognier, 2020 Petit Manseng, 2024 Rosé, 2023 Tannat, 2023 Vintner's Red)","White wine flight, five wines — $18 (2022 Viognier, 2021 Viognier Reserve, 2020 Petit Manseng, 2020 Cuvée Petit Manseng, 2024 Rosé)","Red wine flight, five wines — $23 (2024 Rosé, 2022 Merlot, 2023 Tannat, 2023 Vintner's Red, 2023 Hillside Red)"],
+    food:"Artisanal breads from Alegre Hill Bakers in Linden (limited quantities), à-la-carte cheeses, a meat and cheese platter, crackers, and a giant pretzel; the selection varies with availability. Outside picnics permitted.", foodLevel:"snacks", picnic:true,
     wines:["Viognier","Roussanne","Cabernet Franc","Petit Verdot"],
     features:["Small hillside winery","Panoramic valley and mountain views","Unpretentious tasting atmosphere"],
     dogs:"Welcome on leash.", dog:"yes",
     res:"First-come, first-served for small groups; contact ahead for six or more.", resLevel:"walkin",
     mine:"Some of the most dramatic scenery of any Virginia winery we've visited. The wines impressed, although slightly less consistent than King Family and DuCard.",
-    url:"https://www.chestergapcellars.com/location", urlLabel:"Visiting information" },
+    url:"https://www.chestergapcellars.com/location", urlLabel:"Visiting information",
+    menu:{ asOf:"2026-11-14", source:"Menus photographed at the winery",
+      note:"Flights are five wines: Standard or White $18, Red $23. Wine by the glass is $13 and glassware to take home is $8. Bottle discounts: 6 bottles 10%, 12 bottles 15%; wine club members get additional discounts. The 2022 Cabernet Franc was marked sold out, and the 2024 Blaufränkisch is for club members only. Tannat is made from a neighboring vineyard's fruit (not estate grown). Snack selection varies with availability; water is complimentary.",
+      food:[
+        { sec:"Cheese (à la carte)", items:[
+          { n:"Smoked Gruyère", p:"$8", d:"Cow." },
+          { n:"Caramella", p:"$8", d:"Cow." },
+          { n:"Sharp Cheddar", p:"$8", d:"Cow." },
+          { n:"Boursin", p:"$8", d:"Cow · shallot & chive or garlic & fine herbs." },
+          { n:"Aged Gouda", p:"$8", d:"Cow." },
+          { n:"Creamy Havarti", p:"$8", d:"Cow." },
+          { n:"Truffle Semi-Soft", p:"$10", d:"Goat." },
+          { n:"Birdie's Pimento Cheese", p:"$10", d:"Spreadable, from South Hill, VA · Classic, Garlic Parmesan, Jalapeño, or Smoked Gouda with Roasted Red Pepper." } ]},
+        { sec:"Platter & crackers", items:[
+          { n:"Meat & Cheese Platter", p:"$24", d:"An assortment of cured meats with crackers, olives, peppers and cheddar cheese." },
+          { n:"Crackers", p:"$4", d:"Gluten free available." } ]},
+        { sec:"Artisanal breads · $13 each · from Alegre Hill Bakers, Linden", items:[
+          { n:"Fall Harvest", p:"$13", d:"Local apple butter, bacon, Brie." },
+          { n:"PGR", p:"$13", d:"Parmesan, garlic, rosemary." },
+          { n:"Korean “Yangnyeom” Cheddar", p:"$13", d:"Sweet and spicy, cheddar cheese." },
+          { n:"Italian", p:"$13", d:"Focaccia, cheese, herbs." },
+          { n:"Mediterranean (Vegan)", p:"$13", d:"Tomatoes, Kalamata olives, rosemary." },
+          { n:"Meat Lovers", p:"$13", d:"Pepperoni, ham, bacon, cheddar." },
+          { n:"Pull Apart", p:"$13", d:"Cheddar, garlic (rest of the description was hidden by glare in the photo)." },
+          { n:"Chocolate", p:"$13", d:"Semi-sweet chocolate, cocoa, cinnamon." },
+          { n:"Giant Pretzel", p:"$13" } ]},
+        { sec:"Beverages", items:[
+          { n:"Canned soda & lemonade", p:"$1.50", d:"Coke, Diet Coke, Coke Zero, Sprite, Ginger Ale, Lemonade." },
+          { n:"Sweet or unsweet tea", p:"$2.50", d:"Peach or raspberry." },
+          { n:"Water", p:"Free", d:"Complimentary." } ]}
+      ],
+      wine:[
+        { sec:"Whites & rosé", items:[
+          { n:"2022 Viognier", d:"White · a purist's example: estate grown, fermented in stainless steel so only the grape's expression shows. Crisp and vibrant.", b:"$28" },
+          { n:"2021 Viognier Reserve", d:"White · aged in French oak to smooth and soften this otherwise vibrant white.", b:"$32" },
+          { n:"2020 Petit Manseng", d:"White · slightly sweet (1% residual sugar), full-bodied, aged in stainless steel.", b:"$26" },
+          { n:"2020 Cuvée Petit Manseng", d:"White · a blend of Petit Manseng and Viognier to bring out the best of both varietals. Poured on the White flight; not on the tasting menu." },
+          { n:"2022 Chardonnay Reserve", d:"White · aged delicately in French oak, balanced and refined.", b:"$32" },
+          { n:"2024 White Merlot", d:"White · a first for the winery: estate Merlot pressed without skin contact, 20% aged in neutral barrels, unfiltered.", b:"$32" },
+          { n:"2024 Rosé", d:"Dry rosé · light in color, full of flavor, crisp. A 50/50 blend of Merlot and Cabernet Franc.", b:"$28" } ]},
+        { sec:"Reds", items:[
+          { n:"2022 Cabernet Franc", d:"Sold out when photographed · estate grown, aged in new and neutral French oak.", b:"$34" },
+          { n:"2022 Merlot", d:"Rich and refined, shows the aging potential of new French oak · silky tannins, delicate vanilla finish.", b:"$34" },
+          { n:"2023 Vintner's Red", d:"Estate blend of Cabernet Franc, Merlot and Petit Verdot, aged in new and neutral French oak; curated each year to show the vineyard's best.", b:"$36" },
+          { n:"2023 Tannat", d:"Fruit from a neighboring vineyard (non-estate), made and cellared here · fruit forward and full of tannins.", b:"$34" },
+          { n:"2023 Hillside Red", d:"Estate Cabernet Franc, Merlot and Petit Verdot with non-estate Tannat · big, bold and powerful; a combination of the Tannat and Vintner's Red at unique ratios.", b:"$38" } ]},
+        { sec:"Club members only", items:[
+          { n:"2024 Blaufränkisch", d:"Club wine · an Austrian grape gaining popularity in Virginia; blackberry and hints of allspice.", b:"$34" } ]}
+      ] } },
 
   { id:"three-fox", n:"Three Fox Vineyards & Brewery", town:"Delaplane", region:"shen", lat:38.91621, lng:-77.925939, visited:true, visitDate:"2026-10-24", tier:"Founding favorite",
     status:"Personally visited October 24 — loved.",
