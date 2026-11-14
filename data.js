@@ -1335,7 +1335,7 @@ window.GUIDE.accolades = {
 
 /* Wines tasted, read from flight sheets, menus and bottle photos (Nov 13, 2026 backup + photos sent in chat).
    Added once to each winery's "Wines to try" list as tasted; names already in the list (any spelling, with or without vintage) are skipped. */
-window.GUIDE.tastedSeed = { v:"2026-11-13b", wines:{
+window.GUIDE.tastedSeed = { v:"2026-11-13c", wines:{
   "accord": ["2022 Barrel Fermented Chardonnay","2024 Le Renard Gris","2024 Fiery Run Chardonnay","2024 Petit Manseng"],
   "arterra": ["2024 Ancestral Chardonnay","2024 Albariño (Estate)","2022 Tannat (Estate)"],
   "barrel-oak": ["2022 Seyval Blanc","2024 Sauvignon Blanc","2022 Barrel Chardonnay","Stainless Steel Chardonnay","2024 Rosé"],
@@ -1344,6 +1344,7 @@ window.GUIDE.tastedSeed = { v:"2026-11-13b", wines:{
   "crimson-lane": ["2023 Sauvignon Blanc (Higher Power Vineyard)"],
   "delaplane-cellars": ["Aitheras","Sauvignon Blanc","Viognier","Petit Manseng"],
   "ducard": ["2025 Rosé","2024 Veni, Vidi, Vino","2025 Gibson Hollow White","2025 Shenandoah"],
+  "king-family": ["2024 Sauvignon Blanc"],
   "magnolia": ["2023 Black Walnut White","2022 Viognier","Battle Mountain Blush","2023 Felice Cabernet Franc rosé","2022 Cabernet Franc","2022 Hawkins Run Red","Pazzo"],
   "narmada": ["NV Chardonel Reserve “sur lie”","2021 Viognier"],
   "quievremont": ["2024 Chardonnay","2023 Petit Manseng","2024 Petit Manseng","2024 Rosé"],

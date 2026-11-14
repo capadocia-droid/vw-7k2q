@@ -772,7 +772,9 @@ function passes(w) {
 }
 function sorted(list) {
   const idx = id => ALL().findIndex(w => w.id === id);
-  const by = { guide: (a, b) => idx(a.id) - idx(b.id), near: (a, b) => distFromBase(a) - distFromBase(b), score: (a, b) => (score(b.id) ?? -1) - (score(a.id) ?? -1) || idx(a.id) - idx(b.id), az: (a, b) => sortName(a).localeCompare(sortName(b), 'en', { numeric: true, sensitivity: 'base' }) };
+  const az = (a, b) => sortName(a).localeCompare(sortName(b), 'en', { numeric: true });
+  const firstVisit = id => { const d = visitsOf(id).map(v => v.date).filter(Boolean).sort()[0]; return d || (isVisited(id) ? '9999' : null); };
+  const by = { guide: (a, b) => { const fa = firstVisit(a.id), fb = firstVisit(b.id); if (fa && fb) return fa.localeCompare(fb) || az(a, b); if (fa) return -1; if (fb) return 1; return az(a, b); }, near: (a, b) => distFromBase(a) - distFromBase(b), score: (a, b) => (score(b.id) ?? -1) - (score(a.id) ?? -1) || az(a, b), az: (a, b) => sortName(a).localeCompare(sortName(b), 'en', { numeric: true, sensitivity: 'base' }) };
   return [...list].sort(by[F.sort] || by.guide);
 }
 function wIcons(w) {
@@ -803,11 +805,11 @@ function renderList() {
       <div class="scroller" id="fchips">${FILTERS.map(([k, l, i]) => `<button class="fchip ${F.on.has(k) ? 'on' : ''}" data-act="toggleF" data-f="${k}">${svg(i)}${l}</button>`).join('')}</div>
       <div class="scroller">
         <button class="fchip ${!F.region ? 'on' : ''}" data-act="region" data-r="">All regions</button>
-        ${Object.entries(G.regions).map(([k, r]) => `<button class="fchip ${F.region === k ? 'on' : ''}" data-act="region" data-r="${k}"><span style="width:10px;height:10px;border-radius:50%;background:${regionColor(k)}"></span>${esc(r.short)}</button>`).join('')}
+        ${Object.entries(G.regions).filter(([k]) => k === F.region || ALL().some(w => w.region === k)).map(([k, r]) => `<button class="fchip ${F.region === k ? 'on' : ''}" data-act="region" data-r="${k}"><span style="width:10px;height:10px;border-radius:50%;background:${regionColor(k)}"></span>${esc(r.short)}</button>`).join('')}
       </div>
       ${F.coll ? `<div class="row"><span class="chip claret">${esc(G.picks[F.coll].title)}</span><button class="linkbtn" data-act="coll" data-k="">Clear</button></div>` : ''}
       <div class="resultbar"><span id="count"></span>
-        <select id="sort" aria-label="Sort"><option value="az">A–Z</option><option value="near">Nearest to ${esc(base().name.split(',')[0])}</option><option value="score">Our score</option><option value="guide">Guide order</option></select></div>
+        <select id="sort" aria-label="Sort"><option value="az">A–Z</option><option value="near">Nearest to ${esc(base().name.split(',')[0])}</option><option value="score">Our score</option><option value="guide">Visited</option></select></div>
       <div class="wlist" id="wl"></div>
     </div>`;
   $('#sort').value = F.sort;
@@ -864,7 +866,7 @@ async function renderWinery(id) {
   view.innerHTML = `
   <div class="hero" style="--rc:${rc}">
     ${coverURL ? `<img src="${coverURL}" alt="">` : `<canvas data-ridge="${esc(id)}" data-color="${rc}"></canvas>`}<div class="shade"></div>
-    <div class="inner"><div class="tier">${esc(regionName(w.region))}${w.tier && !/^Added\b/.test(w.tier) && w.tier !== regionName(w.region) ? ' · ' + esc(w.tier) : ''}</div><h2>${esc(w.n)}</h2><div class="town">${esc(w.town)}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', Virginia'}${w.aka ? ' · ' + esc(w.aka) : ''}</div></div>
+    <div class="inner"><div class="tier">${esc(regionName(w.region))}</div><h2>${esc(w.n)}</h2><div class="town">${esc(w.town)}${/,\s*[A-Z]{2}$/.test(w.town) ? '' : ', Virginia'}${w.aka ? ' · ' + esc(w.aka) : ''}</div></div>
   </div>
   ${s.hidden ? `<div class="card row" style="margin-top:14px;justify-content:space-between;border-color:var(--claret)"><span class="small"><b>Removed from our guide.</b><br><span class="muted">Visits and photos are kept.</span></span><button class="btn primary" data-act="restoreW" data-id="${id}">Restore</button></div>` : ''}
   <div class="actions">
