@@ -1310,6 +1310,12 @@ window.GUIDE.grapes = [
     about:"Decanter reports it has found its footing in many parts of Virginia and plantings keep growing. It needs to hold its acidity, so higher, cooler sites such as those around Linden suit it best.",
     taste:"Grapefruit, lime, cut grass, passion fruit.",
     src:"Decanter" },
+  { id:"albarino", n:"Albariño", kind:"white", kw:["albariño","albarino","alvarinho"],
+    tag:"A Spanish coastal white with a growing Virginia record",
+    about:"From Rías Baixas in Galicia, Spain, where wet Atlantic seasons are normal; across the border in Portugal's Vinho Verde country it is called Alvarinho. Its thick skins help it cope with humid conditions, which suits Virginia. Chrysalis in Middleburg was one of the earliest to plant it, Jancis Robinson singled out its Albariño among Virginia's very good whites, and by 2009 at least two other Loudoun wineries had planted it after Chrysalis's success. It now collects Governor's Cup golds: Afton Mountain's 2021 in 2023, and in 2026 Afton Mountain, Chrysalis (two bottlings) and Valley Road. Plantings are small but growing: a 2026 blind-tasting write-up on Wine Trails and Wanderlust puts it ninth among Virginia's most planted grapes, up from 61 acres in 2021 to 86 in 2025, and found the style varied widely from one winery to the next. Bottlings can be tiny (Afton Mountain made only 200 cases of its 2021), so ask what is pouring.",
+    taste:"Peach and other stone fruit, citrus, tropical and floral aromas; bright acidity with a broad, mouth-filling texture. Chrysalis's Verde bottling is picked early and slightly spritzy, in the Vinho Verde style.",
+    src:"JancisRobinson.com, Virginia Wine, Virginia Governor's Cup, Wine Trails and Wanderlust (2026), winery notes (Chrysalis, Afton Mountain)",
+    x:[["chrysalis","One of Virginia's earliest Albariño plantings; singled out by Jancis Robinson; its 2024 Verde placed third in a 2026 blind tasting of ten","jr"],["crimson-lane","2023 Albariño, noted for its salinity in that 2026 blind tasting","blog"],["arterra","Estate Albariño, including a 2025 organic “Zero” bottling",""],["hazy-mountain","Albariño among the wines to try",""],["mountain-run","Albariño among the wines to try",""]] },
 
   { id:"chardonel", n:"Chardonel", kind:"hybrid", kw:["chardonel","chardonnel"],
     tag:"A hybrid Virginia is betting on",
